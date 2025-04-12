@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- PowerShell'de && operatörü yerine ; oparetörünü kullan.

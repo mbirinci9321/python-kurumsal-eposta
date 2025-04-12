@@ -10,10 +10,10 @@
 - [x] Zaman çizelgesi ve bütçe oluşturulması
 
 ### 2. Teknolojik Altyapı Kurulumu
-- [ ] Python 3.x kurulumu
-- [ ] Gerekli kütüphanelerin yüklenmesi
-- [ ] Versiyon kontrol sisteminin kurulumu
-- [ ] Proje yapısının oluşturulması
+- [x] Python 3.x kurulumu
+- [x] Gerekli kütüphanelerin yüklenmesi
+- [x] Versiyon kontrol sisteminin kurulumu
+- [x] Proje yapısının oluşturulması
 
 ### 3. Mock Veri Yönetimi
 - [ ] Örnek kullanıcı verilerinin oluşturulması

@@ -1,0 +1,172 @@
+[
+  {
+    "id": 1,
+    "name": "Pazarlama Şablonu 1",
+    "content": "\n                <div style=\"font-family: Arial, sans-serif; font-size: 10pt;\">\n                    <p><strong>Pazarlama Departmanı</strong></p>\n                    <p>Ad Soyad: {full_name}</p>\n                    <p>Unvan: {title}</p>\n                    <p>E-posta: {email}</p>\n                    <p>Telefon: {phone}</p>\n                    <p>Mobil: {mobile}</p>\n                </div>\n            ",
+    "department": "Pazarlama",
+    "is_default": true,
+    "variables": [
+      "full_name",
+      "title",
+      "email",
+      "phone",
+      "mobile"
+    ],
+    "created_by_id": 1,
+    "created_at": "2025-04-11T16:57:12.000813",
+    "updated_at": "2025-04-11T16:57:12.000822"
+  },
+  {
+    "id": 2,
+    "name": "İnsan Kaynakları Şablonu 2",
+    "content": "\n                <div style=\"font-family: Arial, sans-serif; font-size: 10pt;\">\n                    <p><strong>İnsan Kaynakları Departmanı</strong></p>\n                    <p>Ad Soyad: {full_name}</p>\n                    <p>Unvan: {title}</p>\n                    <p>E-posta: {email}</p>\n                    <p>Telefon: {phone}</p>\n                    <p>Mobil: {mobile}</p>\n                </div>\n            ",
+    "department": "İnsan Kaynakları",
+    "is_default": false,
+    "variables": [
+      "full_name",
+      "title",
+      "email",
+      "phone",
+      "mobile"
+    ],
+    "created_by_id": 1,
+    "created_at": "2025-04-10T16:57:12.000841",
+    "updated_at": "2025-04-10T16:57:12.000852"
+  },
+  {
+    "id": 3,
+    "name": "Finans Şablonu 3",
+    "content": "\n                <div style=\"font-family: Arial, sans-serif; font-size: 10pt;\">\n                    <p><strong>Finans Departmanı</strong></p>\n                    <p>Ad Soyad: {full_name}</p>\n                    <p>Unvan: {title}</p>\n                    <p>E-posta: {email}</p>\n                    <p>Telefon: {phone}</p>\n                    <p>Mobil: {mobile}</p>\n                </div>\n            ",
+    "department": "Finans",
+    "is_default": false,
+    "variables": [
+      "full_name",
+      "title",
+      "email",
+      "phone",
+      "mobile"
+    ],
+    "created_by_id": 1,
+    "created_at": "2025-04-09T16:57:12.000860",
+    "updated_at": "2025-04-09T16:57:12.000863"
+  },
+  {
+    "id": 4,
+    "name": "Bilgi İşlem Şablonu 4",
+    "content": "\n                <div style=\"font-family: Arial, sans-serif; font-size: 10pt;\">\n                    <p><strong>Bilgi İşlem Departmanı</strong></p>\n                    <p>Ad Soyad: {full_name}</p>\n                    <p>Unvan: {title}</p>\n                    <p>E-posta: {email}</p>\n                    <p>Telefon: {phone}</p>\n                    <p>Mobil: {mobile}</p>\n                </div>\n            ",
+    "department": "Bilgi İşlem",
+    "is_default": false,
+    "variables": [
+      "full_name",
+      "title",
+      "email",
+      "phone",
+      "mobile"
+    ],
+    "created_by_id": 1,
+    "created_at": "2025-04-08T16:57:12.000867",
+    "updated_at": "2025-04-08T16:57:12.000869"
+  },
+  {
+    "id": 5,
+    "name": "Üretim Şablonu 5",
+    "content": "\n                <div style=\"font-family: Arial, sans-serif; font-size: 10pt;\">\n                    <p><strong>Üretim Departmanı</strong></p>\n                    <p>Ad Soyad: {full_name}</p>\n                    <p>Unvan: {title}</p>\n                    <p>E-posta: {email}</p>\n                    <p>Telefon: {phone}</p>\n                    <p>Mobil: {mobile}</p>\n                </div>\n            ",
+    "department": "Üretim",
+    "is_default": false,
+    "variables": [
+      "full_name",
+      "title",
+      "email",
+      "phone",
+      "mobile"
+    ],
+    "created_by_id": 1,
+    "created_at": "2025-04-07T16:57:12.000873",
+    "updated_at": "2025-04-07T16:57:12.000876"
+  },
+  {
+    "id": 6,
+    "name": "Kalite Şablonu 6",
+    "content": "\n                <div style=\"font-family: Arial, sans-serif; font-size: 10pt;\">\n                    <p><strong>Kalite Departmanı</strong></p>\n                    <p>Ad Soyad: {full_name}</p>\n                    <p>Unvan: {title}</p>\n                    <p>E-posta: {email}</p>\n                    <p>Telefon: {phone}</p>\n                    <p>Mobil: {mobile}</p>\n                </div>\n            ",
+    "department": "Kalite",
+    "is_default": false,
+    "variables": [
+      "full_name",
+      "title",
+      "email",
+      "phone",
+      "mobile"
+    ],
+    "created_by_id": 1,
+    "created_at": "2025-04-06T16:57:12.000880",
+    "updated_at": "2025-04-06T16:57:12.000882"
+  },
+  {
+    "id": 7,
+    "name": "Yönetim Şablonu 7",
+    "content": "\n                <div style=\"font-family: Arial, sans-serif; font-size: 10pt;\">\n                    <p><strong>Yönetim Departmanı</strong></p>\n                    <p>Ad Soyad: {full_name}</p>\n                    <p>Unvan: {title}</p>\n                    <p>E-posta: {email}</p>\n                    <p>Telefon: {phone}</p>\n                    <p>Mobil: {mobile}</p>\n                </div>\n            ",
+    "department": "Yönetim",
+    "is_default": false,
+    "variables": [
+      "full_name",
+      "title",
+      "email",
+      "phone",
+      "mobile"
+    ],
+    "created_by_id": 1,
+    "created_at": "2025-04-05T16:57:12.000886",
+    "updated_at": "2025-04-05T16:57:12.000889"
+  },
+  {
+    "id": 8,
+    "name": "Satış Şablonu 8",
+    "content": "\n                <div style=\"font-family: Arial, sans-serif; font-size: 10pt;\">\n                    <p><strong>Satış Departmanı</strong></p>\n                    <p>Ad Soyad: {full_name}</p>\n                    <p>Unvan: {title}</p>\n                    <p>E-posta: {email}</p>\n                    <p>Telefon: {phone}</p>\n                    <p>Mobil: {mobile}</p>\n                </div>\n            ",
+    "department": "Satış",
+    "is_default": false,
+    "variables": [
+      "full_name",
+      "title",
+      "email",
+      "phone",
+      "mobile"
+    ],
+    "created_by_id": 1,
+    "created_at": "2025-04-04T16:57:12.000893",
+    "updated_at": "2025-04-04T16:57:12.000895"
+  },
+  {
+    "id": 9,
+    "name": "Pazarlama Şablonu 9",
+    "content": "\n                <div style=\"font-family: Arial, sans-serif; font-size: 10pt;\">\n                    <p><strong>Pazarlama Departmanı</strong></p>\n                    <p>Ad Soyad: {full_name}</p>\n                    <p>Unvan: {title}</p>\n                    <p>E-posta: {email}</p>\n                    <p>Telefon: {phone}</p>\n                    <p>Mobil: {mobile}</p>\n                </div>\n            ",
+    "department": "Pazarlama",
+    "is_default": false,
+    "variables": [
+      "full_name",
+      "title",
+      "email",
+      "phone",
+      "mobile"
+    ],
+    "created_by_id": 1,
+    "created_at": "2025-04-03T16:57:12.000898",
+    "updated_at": "2025-04-03T16:57:12.000901"
+  },
+  {
+    "id": 10,
+    "name": "İnsan Kaynakları Şablonu 10",
+    "content": "\n                <div style=\"font-family: Arial, sans-serif; font-size: 10pt;\">\n                    <p><strong>İnsan Kaynakları Departmanı</strong></p>\n                    <p>Ad Soyad: {full_name}</p>\n                    <p>Unvan: {title}</p>\n                    <p>E-posta: {email}</p>\n                    <p>Telefon: {phone}</p>\n                    <p>Mobil: {mobile}</p>\n                </div>\n            ",
+    "department": "İnsan Kaynakları",
+    "is_default": false,
+    "variables": [
+      "full_name",
+      "title",
+      "email",
+      "phone",
+      "mobile"
+    ],
+    "created_by_id": 1,
+    "created_at": "2025-04-02T16:57:12.000904",
+    "updated_at": "2025-04-02T16:57:12.000907"
+  }
+]
