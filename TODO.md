@@ -3,15 +3,15 @@
 ## Temel Altyapı
 - [x] Proje yapısının oluşturulması
 - [x] Temel Flask uygulamasının kurulması
-- [ ] SQLite veritabanı entegrasyonu
-- [ ] Kullanıcı yönetimi sistemi
-- [ ] Admin paneli
+- [x] SQLite veritabanı entegrasyonu
+- [x] Kullanıcı yönetimi sistemi
+- [x] Admin paneli
 - [ ] İmza şablonları yönetimi
 
 ## Kullanıcı Arayüzü
 - [x] Temel HTML template
-- [ ] Kullanıcı giriş/çıkış sayfaları
-- [ ] Admin paneli arayüzü
+- [x] Kullanıcı giriş/çıkış sayfaları
+- [x] Admin paneli arayüzü
 - [ ] İmza önizleme sayfası
 - [ ] Responsive tasarım iyileştirmeleri
 
@@ -29,19 +29,19 @@
 - [ ] Hata yönetimi ve loglama
 
 ## Güvenlik
-- [ ] Kullanıcı yetkilendirme sistemi
-- [ ] Şifre hashleme
-- [ ] Oturum yönetimi
+- [x] Kullanıcı yetkilendirme sistemi
+- [x] Şifre hashleme
+- [x] Oturum yönetimi
 - [ ] Güvenlik logları
 
 ## Dağıtım ve Bakım
 - [ ] Kurulum scripti
 - [ ] Yedekleme sistemi
 - [ ] Güncelleme mekanizması
-- [ ] Dokümantasyon
+- [x] Dokümantasyon
 
 ## Git Yönetimi
-- [ ] Git repository oluşturma
-- [ ] .gitignore dosyası
-- [ ] Commit stratejisi belirleme
+- [x] Git repository oluşturma
+- [x] .gitignore dosyası
+- [x] Commit stratejisi belirleme
 - [ ] Branch yönetimi 
