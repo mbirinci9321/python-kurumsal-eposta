@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outlook İmza Yönetimi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Outlook İmza Yönetimi</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">İmza Güncelle</h5>
+                <form action="{{ url_for('update_signature', username=current_user.username) }}" method="POST">
+                    <div class="mb-3">
+                        <label for="signatureTemplate" class="form-label">İmza Şablonu</label>
+                        <select class="form-select" id="signatureTemplate" name="template">
+                            <option value="default">Varsayılan Şablon</option>
+                            <option value="executive">Yönetici Şablonu</option>
+                            <option value="sales">Satış Şablonu</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">İmzayı Güncelle</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
