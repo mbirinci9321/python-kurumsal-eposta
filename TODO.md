@@ -3,11 +3,11 @@
 ## Faz 1: Temel Geliştirme, Mock Veri ve Basit Lisanslama Altyapısı
 
 ### 1. Planlama ve Gereksinim Analizi
-- [ ] Sistem yöneticileri ve paydaşlarla görüşmeler
-- [ ] Proje kapsamının netleştirilmesi
-- [ ] Teknoloji stack'inin belirlenmesi
-- [ ] Lisans modelinin belirlenmesi
-- [ ] Zaman çizelgesi ve bütçe oluşturulması
+- [x] Sistem yöneticileri ve paydaşlarla görüşmeler
+- [x] Proje kapsamının netleştirilmesi
+- [x] Teknoloji stack'inin belirlenmesi
+- [x] Lisans modelinin belirlenmesi
+- [x] Zaman çizelgesi ve bütçe oluşturulması
 
 ### 2. Teknolojik Altyapı Kurulumu
 - [ ] Python 3.x kurulumu
