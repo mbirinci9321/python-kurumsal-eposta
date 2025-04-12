@@ -1,41 +1,60 @@
-# Outlook İmza Yönetimi
+# Python ile Kurumsal E-posta İmza Yönetim Sistemi
 
-Bu uygulama, Active Directory'den kullanıcı bilgilerini çekerek Outlook imzalarını merkezi olarak yönetmenizi sağlar.
+Bu proje, şirket çalışanlarının Outlook e-posta imzalarını merkezi olarak yönetmek için geliştirilmiş bir sistemdir.
 
 ## Özellikler
 
-- Active Directory entegrasyonu
 - Merkezi imza yönetimi
-- Özelleştirilebilir imza şablonları
-- Kullanıcı bazlı imza güncelleme
+- Active Directory entegrasyonu
+- Kullanıcı dostu yönetim paneli
+- Departman bazlı imza şablonları
+- Lisans yönetimi
+- Detaylı raporlama
+- Kapsamlı loglama
+
+## Gereksinimler
+
+- Python 3.x
+- Active Directory sunucusu
+- Outlook (kullanıcı tarafında)
 
 ## Kurulum
 
-1. Gerekli paketleri yükleyin:
+1. Projeyi klonlayın:
+```bash
+git clone https://github.com/mbirinci9321/python-kurumsal-eposta.git
+cd python-kurumsal-eposta
+```
+
+2. Gerekli paketleri yükleyin:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. `.env` dosyasını düzenleyin:
-- LDAP_SERVER: Domain Controller adresi
-- LDAP_USER: Admin kullanıcı adı
-- LDAP_PASSWORD: Admin şifresi
-- LDAP_SEARCH_BASE: Active Directory arama tabanı
-
-3. Uygulamayı çalıştırın:
+3. Yapılandırma dosyasını düzenleyin:
 ```bash
-python app.py
+cp config.example.ini config.ini
+# config.ini dosyasını düzenleyin
 ```
 
-## Kullanım
+4. Uygulamayı başlatın:
+```bash
+python main.py
+```
 
-1. Web arayüzüne giriş yapın
-2. Kullanıcı seçin
-3. İmza şablonunu seçin
-4. "İmzayı Güncelle" butonuna tıklayın
+## Lisans
 
-## Güvenlik Notları
+Bu proje yıllık lisans modeli ile dağıtılmaktadır. Detaylı bilgi için lütfen iletişime geçin.
 
-- `.env` dosyasını asla versiyon kontrolüne eklemeyin
-- LDAP bağlantı bilgilerini güvenli bir şekilde saklayın
-- Uygulamayı HTTPS üzerinden çalıştırın 
+## İletişim
+
+- E-posta: murat@muratbirinci.com.tr
+- GitHub: [mbirinci9321](https://github.com/mbirinci9321)
+
+## Katkıda Bulunma
+
+1. Bu depoyu fork edin
+2. Yeni bir branch oluşturun (`git checkout -b feature/amazing-feature`)
+3. Değişikliklerinizi commit edin (`git commit -m 'Add some amazing feature'`)
+4. Branch'inizi push edin (`git push origin feature/amazing-feature`)
+5. Pull Request oluşturun 
