@@ -7,3 +7,4 @@ alwaysApply: true
 # Your rule content
 
 - PowerShell'de && operatörü yerine ; oparetörünü kullan.
+- Python tam yolu C:\Users\Murat\AppData\Local\Programs\Python\Python313\python.exe

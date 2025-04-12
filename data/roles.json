@@ -1,0 +1,18 @@
+{
+    "admin": [
+        "*"
+    ],
+    "user": [
+        "view_users",
+        "view_licenses",
+        "view_templates"
+    ],
+    "manager": [
+        "view_users",
+        "edit_users",
+        "view_licenses",
+        "edit_licenses",
+        "view_templates",
+        "edit_templates"
+    ]
+}

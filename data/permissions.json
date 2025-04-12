@@ -1,0 +1,15 @@
+[
+    "view_users",
+    "edit_users",
+    "delete_users",
+    "view_licenses",
+    "edit_licenses",
+    "delete_licenses",
+    "view_templates",
+    "edit_templates",
+    "delete_templates",
+    "view_reports",
+    "generate_reports",
+    "manage_backups",
+    "restore_backups"
+]

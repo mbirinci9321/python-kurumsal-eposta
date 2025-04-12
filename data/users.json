@@ -1,0 +1,12 @@
+[
+    {
+        "id": 1,
+        "username": "murat",
+        "password_hash": "b984d2b80b0f62d6f69d06e2c5d187fd863aed0d987ae05283939f0be7757569",
+        "salt": "7551340f36dc33df9e26e1811e59928f",
+        "role": "admin",
+        "is_active": true,
+        "created_at": "2025-04-12T22:22:50.958175",
+        "updated_at": "2025-04-12T22:22:50.958200"
+    }
+]

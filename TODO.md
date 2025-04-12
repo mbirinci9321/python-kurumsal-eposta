@@ -1,108 +1,78 @@
 # Proje Görev Listesi
 
-## Faz 1: Temel Geliştirme, Mock Veri ve Basit Lisanslama Altyapısı
+## Tamamlanan Görevler ✅
 
-### 1. Planlama ve Gereksinim Analizi
-- [x] Sistem yöneticileri ve paydaşlarla görüşmeler
-- [x] Proje kapsamının netleştirilmesi
-- [x] Teknoloji stack'inin belirlenmesi
-- [x] Lisans modelinin belirlenmesi
-- [x] Zaman çizelgesi ve bütçe oluşturulması
+### Temel Yapı
+- [x] Veri yönetimi modülü (DataManager) oluşturuldu
+- [x] Ana pencere (MainWindow) yapısı oluşturuldu
+- [x] Tab sistemi entegre edildi
+- [x] Modern tema ve görünüm eklendi
 
-### 2. Teknolojik Altyapı Kurulumu
-- [x] Python 3.x kurulumu
-- [x] Gerekli kütüphanelerin yüklenmesi
-- [x] Versiyon kontrol sisteminin kurulumu
-- [x] Proje yapısının oluşturulması
+### Kullanıcı Yönetimi
+- [x] Kullanıcı listesi görüntüleme
+- [x] Kullanıcı ekleme/düzenleme/silme
+- [x] Filtreleme ve arama özellikleri
+- [x] Toplu işlem özellikleri (aktifleştirme/pasifleştirme/silme)
+- [x] Dışa/İçe aktarma (CSV/JSON)
 
-### 3. Mock Veri Yönetimi
-- [ ] Örnek kullanıcı verilerinin oluşturulması
-- [ ] Veri okuma ve işleme fonksiyonlarının geliştirilmesi
-- [ ] Filtreleme mekanizmasının oluşturulması
+### Şablon Yönetimi
+- [x] Şablon listesi görüntüleme
+- [x] Şablon ekleme/düzenleme/silme
+- [x] Varsayılan şablon yönetimi
 
-### 4. Kullanıcı Arayüzü Geliştirme
-- [ ] Temel GUI tasarımı
-- [ ] Kullanıcı listesi görüntüleme
-- [ ] Filtreleme özelliklerinin eklenmesi
+### Lisans Yönetimi
+- [x] Lisans listesi görüntüleme
+- [x] Lisans ekleme/düzenleme/silme
+- [x] Lisans durumu takibi
 
-### 5. İmza Şablonu Yönetimi
-- [ ] Şablon oluşturma arayüzü
-- [ ] Jinja2 entegrasyonu
-- [ ] Şablon kaydetme ve yükleme işlevleri
+### Veri Yönetimi
+- [x] Veri yedekleme sistemi
+- [x] Otomatik veri yedekleme
+- [x] Veri geri yükleme
 
-### 6. İmza Uygulama Simülasyonu
-- [ ] Örnek imza oluşturma fonksiyonu
-- [ ] Önizleme mekanizması
-- [ ] Mock push işlemi
+## Devam Eden Görevler 🚧
 
-### 7. Basit Lisanslama Altyapısı
-- [ ] Lisans anahtarı formatının belirlenmesi
-- [ ] Aktivasyon mekanizması
-- [ ] Lisans durumu kontrolü
-- [ ] Lisans veri saklama
+### Kullanıcı Arayüzü
+- [x] İkon seti entegrasyonu
+- [x] Kısayol tuşları
+- [x] Sürükle-bırak desteği
+- [x] Gelişmiş tablo özellikleri
 
-### 8. Yönetim Panosu Temel Tasarımı
-- [ ] Kullanıcı yönetimi bölümü
-- [ ] İmza şablonları yönetimi
-- [ ] Lisans yönetimi bölümü
-- [ ] Genel bakış paneli
+### Raporlama
+- [x] Kullanıcı aktivite raporu
+- [x] Lisans kullanım raporu
+- [x] Şablon kullanım istatistikleri
+- [x] PDF/Excel formatında rapor çıktısı
 
-### 9. Loglama
-- [ ] Temel loglama mekanizması
-- [ ] Log dosyası yapılandırması
-- [ ] Log kayıt formatının belirlenmesi
+### Güvenlik
+- [ ] Kullanıcı yetkilendirme sistemi
+- [ ] İşlem logları
+- [ ] Hassas veri şifreleme
 
-### 10. Temel Testler
-- [ ] Mock veri testleri
-- [ ] Lisanslama testleri
-- [ ] Kullanıcı arayüzü testleri
+### Entegrasyon
+- [ ] Active Directory entegrasyonu
+- [ ] E-posta sunucusu entegrasyonu
+- [ ] Outlook eklenti desteği
 
-## Faz 2: Active Directory Entegrasyonu ve Gelişmiş Lisanslama
+### Performans
+- [ ] Büyük veri setleri için optimizasyon
+- [ ] Sayfalama sistemi
+- [ ] Önbellek mekanizması
 
-### 1. Active Directory Entegrasyonu
-- [ ] LDAP3 kütüphanesi entegrasyonu
-- [ ] AD bağlantı yapılandırması
-- [ ] Kullanıcı bilgilerini çekme
-- [ ] Filtreleme mekanizması
-
-### 2. Gelişmiş Lisanslama Mekanizması
-- [ ] Güvenli lisans saklama
-- [ ] Lisans doğrulama
-- [ ] Süre kontrolü
-- [ ] Uyarı mekanizması
-
-### 3. Yönetim Panosu Geliştirme
-- [ ] AD veri entegrasyonu
-- [ ] Gelişmiş filtreleme
-- [ ] Ayarlar yönetimi
-
-### 4. Gerçek İmza Uygulama Mekanizması
-- [ ] Outlook imza klasörü entegrasyonu
-- [ ] Dosya oluşturma ve kopyalama
-- [ ] Uzaktan erişim mekanizması
-
-### 5. Gelişmiş Raporlama
-- [ ] Rapor oluşturma
-- [ ] Görselleştirme
-- [ ] Dışa aktarma
-
-### 6. Gelişmiş Log Yönetimi
-- [ ] Filtreleme ve sıralama
-- [ ] Dışa aktarma
-- [ ] Log analizi
-
-### 7. Kapsamlı Testler
-- [ ] AD entegrasyon testleri
-- [ ] Lisanslama testleri
-- [ ] İmza uygulama testleri
-- [ ] Yönetim paneli testleri
-
-### 8. Dağıtım ve Belgeleme
-- [ ] Kurulum paketi
+### Test ve Dokümantasyon
+- [ ] Birim testleri
+- [ ] Entegrasyon testleri
 - [ ] Kullanıcı kılavuzu
 - [ ] API dokümantasyonu
 
-### 9. Bakım ve Destek Planlaması
-- [ ] Bakım planı
-- [ ] Destek süreçleri
-- [ ] Geri bildirim mekanizması 
+## Gelecek Özellikler 🎯
+- [ ] Çoklu dil desteği
+- [ ] Tema özelleştirme
+- [ ] Mobil uygulama desteği
+- [ ] Web arayüzü
+- [ ] Otomatik güncelleme sistemi
+
+## Notlar 📝
+- Öncelikli görevler "Devam Eden Görevler" bölümünde
+- Her sprint sonunda liste güncellenecek
+- Yeni özellik talepleri "Gelecek Özellikler" bölümüne eklenecek 
