@@ -9,7 +9,7 @@ SQLAlchemy==2.0.23
 alembic==1.12.1
 
 # GUI
-PyQt6==6.5.2
+PyQt6==6.6.1
 PyQt6-Qt6==6.5.2
 PyQt6-sip==13.5.2
 
@@ -25,7 +25,7 @@ pandas==2.1.1
 openpyxl==3.1.2
 
 # Security
-cryptography==41.0.3
+cryptography==42.0.2
 PyJWT==2.8.0
 
 # Logging
@@ -38,4 +38,11 @@ pytest-qt==4.2.0
 # Development Tools
 black==23.9.1
 flake8==6.1.0
-isort==5.12.0 
+isort==5.12.0
+
+# Outlook Integration
+pywin32==310
+
+# Active Directory Integration
+ldap3==2.9.1
+pyasn1==0.5.0 

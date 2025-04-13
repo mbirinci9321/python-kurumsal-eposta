@@ -19,6 +19,7 @@
 - [x] Şablon listesi görüntüleme
 - [x] Şablon ekleme/düzenleme/silme
 - [x] Varsayılan şablon yönetimi
+- [x] Dinamik değişken desteği ({{değişken}} formatında)
 
 ### Lisans Yönetimi
 - [x] Lisans listesi görüntüleme
@@ -29,6 +30,12 @@
 - [x] Veri yedekleme sistemi
 - [x] Otomatik veri yedekleme
 - [x] Veri geri yükleme
+
+### Entegrasyon
+- [x] Active Directory entegrasyonu
+- [x] Active Directory OU yapısı desteği
+- [x] Outlook imza entegrasyonu
+- [x] OU bazlı imza dağıtımı
 
 ## Devam Eden Görevler 🚧
 
@@ -50,7 +57,6 @@
 - [ ] Hassas veri şifreleme
 
 ### Entegrasyon
-- [ ] Active Directory entegrasyonu
 - [ ] E-posta sunucusu entegrasyonu
 - [ ] Outlook eklenti desteği
 

@@ -8,3 +8,7 @@ bir sistem içerir.
 __version__ = "0.1.0"
 
 # This file makes the src directory a Python package 
+
+"""
+This module contains the main application code for the Outlook signature management system.
+""" 

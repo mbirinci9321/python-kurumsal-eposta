@@ -1,0 +1,11 @@
+{
+    "server": "ldap://yourdomain.com",
+    "domain": "yourdomain.com",
+    "base_dn": "DC=yourdomain,DC=com",
+    "username": "",
+    "password": "",
+    "use_ssl": false,
+    "use_tls": false,
+    "port": 389,
+    "timeout": 10
+}

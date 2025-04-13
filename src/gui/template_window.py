@@ -3,13 +3,14 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QTableWidget, QTableWidgetItem,
     QComboBox, QLineEdit, QFormLayout, QMessageBox,
     QTextEdit, QDialog, QDialogButtonBox, QCheckBox,
-    QToolBar, QFileDialog, QHeaderView, QMenu
+    QToolBar, QFileDialog, QHeaderView, QMenu, QGroupBox,
+    QTextBrowser
 )
 from PyQt6.QtGui import QAction
 from PyQt6.QtCore import Qt, pyqtSignal
 from utils.data_manager import DataManager
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from gui.icons import icon_manager
 
 class TemplateDialog(QDialog):
@@ -143,53 +144,57 @@ class TemplateWindow(QWidget):
         """Araç çubuğunu oluşturur."""
         toolbar = QToolBar()
         
-        # Yeni şablon ekle butonu
-        add_action = QAction("Yeni Şablon", self)
-        self.icon_manager.set_icon(add_action, "template_add")
-        add_action.triggered.connect(self.show_new_template_dialog)
+        # Şablon işlemleri
+        add_action = QAction(self.icon_manager.get_icon("add"), "Yeni Şablon", self)
+        add_action.triggered.connect(self.show_add_template_dialog)
         toolbar.addAction(add_action)
         
-        # Şablon düzenle butonu
-        edit_action = QAction("Şablon Düzenle", self)
-        self.icon_manager.set_icon(edit_action, "template_edit")
+        edit_action = QAction(self.icon_manager.get_icon("edit"), "Şablon Düzenle", self)
         edit_action.triggered.connect(self.show_edit_template_dialog)
         toolbar.addAction(edit_action)
         
-        # Şablon sil butonu
-        delete_action = QAction("Şablon Sil", self)
-        self.icon_manager.set_icon(delete_action, "template_delete")
+        delete_action = QAction(self.icon_manager.get_icon("delete"), "Şablon Sil", self)
         delete_action.triggered.connect(self.delete_template)
         toolbar.addAction(delete_action)
         
         toolbar.addSeparator()
         
-        # Dışa aktarma butonu
-        export_action = QAction("Dışa Aktar", self)
-        self.icon_manager.set_icon(export_action, "export")
-        export_action.triggered.connect(self.export_templates)
-        toolbar.addAction(export_action)
-        
-        # İçe aktarma butonu
-        import_action = QAction("İçe Aktar", self)
-        self.icon_manager.set_icon(import_action, "import")
-        import_action.triggered.connect(self.import_templates)
-        toolbar.addAction(import_action)
+        # Kategori işlemleri
+        category_action = QAction(self.icon_manager.get_icon("folder"), "Kategori Yönetimi", self)
+        category_action.triggered.connect(self.show_category_dialog)
+        toolbar.addAction(category_action)
         
         self.main_layout.addWidget(toolbar)
     
     def create_filter_area(self):
-        """Filtreleme alanını oluşturur."""
+        """Filtre alanını oluşturur."""
         filter_widget = QWidget()
         filter_layout = QHBoxLayout()
         
-        # Departman filtresi
-        self.department_combo = QComboBox()
-        self.department_combo.addItem("Tüm Departmanlar", "")
-        for dept in self.data_manager.get_departments():
-            self.department_combo.addItem(dept, dept)
-        self.department_combo.currentIndexChanged.connect(self.filter_templates)
-        filter_layout.addWidget(QLabel("Departman:"))
-        filter_layout.addWidget(self.department_combo)
+        # Kategori filtresi
+        self.category_combo = QComboBox()
+        self.category_combo.addItem("Tüm Kategoriler")
+        for category in self.data_manager.get_categories():
+            self.category_combo.addItem(category["name"], category["id"])
+        self.category_combo.currentIndexChanged.connect(self.filter_templates)
+        filter_layout.addWidget(QLabel("Kategori:"))
+        filter_layout.addWidget(self.category_combo)
+        
+        # Durum filtresi
+        self.status_combo = QComboBox()
+        self.status_combo.addItem("Tümü")
+        self.status_combo.addItems(["Aktif", "Pasif"])
+        self.status_combo.currentIndexChanged.connect(self.filter_templates)
+        filter_layout.addWidget(QLabel("Durum:"))
+        filter_layout.addWidget(self.status_combo)
+        
+        # Tarih filtresi
+        self.date_combo = QComboBox()
+        self.date_combo.addItem("Tüm Zamanlar")
+        self.date_combo.addItems(["Son 7 Gün", "Son 30 Gün", "Son 90 Gün"])
+        self.date_combo.currentIndexChanged.connect(self.filter_templates)
+        filter_layout.addWidget(QLabel("Tarih:"))
+        filter_layout.addWidget(self.date_combo)
         
         # Arama kutusu
         self.search_edit = QLineEdit()
@@ -212,7 +217,19 @@ class TemplateWindow(QWidget):
         self.template_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.template_table.customContextMenuRequested.connect(self.show_context_menu)
         self.template_table.setSortingEnabled(True)
+        self.template_table.itemSelectionChanged.connect(self.show_preview)
         self.main_layout.addWidget(self.template_table)
+
+        # Önizleme alanı
+        preview_group = QGroupBox("Şablon Önizleme")
+        preview_layout = QVBoxLayout()
+        
+        self.preview_webview = QTextBrowser()
+        self.preview_webview.setMinimumHeight(200)
+        preview_layout.addWidget(self.preview_webview)
+        
+        preview_group.setLayout(preview_layout)
+        self.main_layout.addWidget(preview_group)
     
     def create_bottom_toolbar(self):
         """Alt araç çubuğunu oluşturur."""
@@ -234,11 +251,11 @@ class TemplateWindow(QWidget):
     
     def load_templates(self):
         """Şablonları yükler ve tabloyu günceller."""
-        # Departman listesini güncelle
-        departments = self.data_manager.get_departments()
-        self.department_combo.clear()
-        self.department_combo.addItem("Tümü")
-        self.department_combo.addItems(departments)
+        # Kategori listesini güncelle
+        self.category_combo.clear()
+        self.category_combo.addItem("Tüm Kategoriler")
+        for category in self.data_manager.get_categories():
+            self.category_combo.addItem(category["name"], category["id"])
         
         # Şablonları yükle
         templates = self.data_manager.get_templates()
@@ -246,39 +263,61 @@ class TemplateWindow(QWidget):
         
         for row, template in enumerate(templates):
             self.template_table.setItem(row, 0, QTableWidgetItem(str(template["id"])))
-            self.template_table.setItem(row, 1, QTableWidgetItem(template["name"]))
-            self.template_table.setItem(row, 2, QTableWidgetItem(template["department"]))
-            self.template_table.setItem(row, 3, QTableWidgetItem(template["updated_at"]))
+            self.template_table.setItem(row, 1, QTableWidgetItem(template.get("name", "")))
+            self.template_table.setItem(row, 2, QTableWidgetItem(template.get("description", "")))
+            self.template_table.setItem(row, 3, QTableWidgetItem(template.get("updated_at", "")))
         
         self.template_table.resizeColumnsToContents()
         self.status_label.setText(f"Toplam {len(templates)} şablon")
     
     def filter_templates(self):
-        """Şablonları filtreler ve tabloya ekler."""
-        department = self.department_combo.currentText()
+        """Şablonları filtreler ve tabloyu günceller."""
+        category_id = self.category_combo.currentData()
+        status = self.status_combo.currentText()
+        date_filter = self.date_combo.currentText()
         search_text = self.search_edit.text().lower()
         
         # Tüm şablonları al
         templates = self.data_manager.get_templates()
         
-        # Departman filtresi
-        if department != "Tümü":
-            templates = [t for t in templates if t["department"] == department]
+        # Kategori filtresi
+        if category_id:
+            templates = [t for t in templates if t.get("category_id") == category_id]
+        
+        # Durum filtresi
+        if status != "Tümü":
+            is_active = status == "Aktif"
+            templates = [t for t in templates if t.get("is_active", False) == is_active]
+        
+        # Tarih filtresi
+        if date_filter != "Tüm Zamanlar":
+            days = {
+                "Son 7 Gün": 7,
+                "Son 30 Gün": 30,
+                "Son 90 Gün": 90
+            }
+            days_ago = datetime.now() - timedelta(days=days[date_filter])
+            templates = [
+                t for t in templates
+                if datetime.fromisoformat(t["updated_at"]) >= days_ago
+            ]
         
         # Arama filtresi
         if search_text:
             templates = [
                 t for t in templates
-                if search_text in t["name"].lower()
+                if search_text in t.get("name", "").lower() or
+                search_text in t.get("description", "").lower() or
+                search_text in t.get("content", "").lower()
             ]
         
         # Tabloyu güncelle
         self.template_table.setRowCount(len(templates))
         for row, template in enumerate(templates):
             self.template_table.setItem(row, 0, QTableWidgetItem(str(template["id"])))
-            self.template_table.setItem(row, 1, QTableWidgetItem(template["name"]))
-            self.template_table.setItem(row, 2, QTableWidgetItem(template["department"]))
-            self.template_table.setItem(row, 3, QTableWidgetItem(template["updated_at"]))
+            self.template_table.setItem(row, 1, QTableWidgetItem(template.get("name", "")))
+            self.template_table.setItem(row, 2, QTableWidgetItem(template.get("description", "")))
+            self.template_table.setItem(row, 3, QTableWidgetItem(template.get("updated_at", "")))
         
         # Sütun genişliklerini ayarla
         self.template_table.resizeColumnsToContents()
@@ -286,25 +325,27 @@ class TemplateWindow(QWidget):
         # Durum etiketini güncelle
         self.status_label.setText(f"Toplam {len(templates)} şablon")
     
-    def show_new_template_dialog(self):
+    def show_add_template_dialog(self):
         """Yeni şablon ekleme penceresini gösterir."""
+        from gui.template_dialog import TemplateDialog
         dialog = TemplateDialog(self, self.data_manager)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
+        if dialog.exec():
             self.load_templates()
     
     def show_edit_template_dialog(self):
-        """Şablon düzenleme dialogunu gösterir."""
-        selected_items = self.template_table.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir şablon seçin.")
+        """Şablon düzenleme penceresini gösterir."""
+        selected_row = self.template_table.currentRow()
+        if selected_row < 0:
+            QMessageBox.warning(self, "Uyarı", "Lütfen düzenlemek istediğiniz şablonu seçin.")
             return
         
-        template_id = int(self.template_table.item(selected_items[0].row(), 0).text())
+        template_id = self.template_table.item(selected_row, 0).text()
         template = self.data_manager.get_template_by_id(template_id)
         
         if template:
+            from gui.template_dialog import TemplateDialog
             dialog = TemplateDialog(self, self.data_manager, template)
-            if dialog.exec() == QDialog.DialogCode.Accepted:
+            if dialog.exec():
                 self.load_templates()
     
     def delete_template(self):
@@ -398,4 +439,24 @@ class TemplateWindow(QWidget):
             action.triggered.connect(lambda checked, col=i: self.template_table.setColumnHidden(col, not checked))
             column_menu.addAction(action)
         
-        menu.exec_(self.template_table.viewport().mapToGlobal(pos)) 
+        menu.exec_(self.template_table.viewport().mapToGlobal(pos))
+
+    def show_preview(self):
+        """Seçili şablonun önizlemesini gösterir."""
+        selected_row = self.template_table.currentRow()
+        if selected_row < 0:
+            self.preview_webview.clear()
+            return
+        
+        template_id = self.template_table.item(selected_row, 0).text()
+        template = self.data_manager.get_template_by_id(template_id)
+        
+        if template:
+            # Şablon içeriğini HTML olarak göster
+            self.preview_webview.setHtml(template.get("content", ""))
+
+    def show_category_dialog(self):
+        """Kategori yönetimi penceresini gösterir."""
+        from gui.category_dialog import CategoryDialog
+        dialog = CategoryDialog(self, self.data_manager)
+        dialog.exec() 

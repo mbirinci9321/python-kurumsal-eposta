@@ -3,8 +3,10 @@ import json
 import os
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from PyQt6.QtCore import QTimer
+import uuid
+from .logger import Logger
 
 class DataManager(QObject):
     """Mock veri yönetimi sınıfı."""
@@ -20,13 +22,22 @@ class DataManager(QObject):
         self._signatures = None
         self._backup_timer = None
         self._backup_interval = 24 * 60 * 60 * 1000  # 24 saat
+        self._categories = []  # Yeni kategori listesi
+        self.groups_file = os.path.join(data_dir, "groups.json")
         
         self.users_file = os.path.join(data_dir, "users.json")
         self.licenses_file = os.path.join(data_dir, "licenses.json")
         self.templates_file = os.path.join(data_dir, "templates.json")
         
+        self.signatures_file = os.path.join(data_dir, "signatures.json")
+        self.logger = Logger()
+        self.signatures = self._load_signatures()
+        
         self.load_data()
         self.start_auto_backup()
+        self._groups = self._load_groups()
+        
+        self.logger.log_info("data", "DataManager başlatıldı")
     
     def load_data(self):
         """Tüm verileri yükle"""
@@ -34,6 +45,7 @@ class DataManager(QObject):
         self.load_templates()
         self.load_licenses()
         self.load_signatures()
+        self.load_categories()  # Kategorileri yükle
     
     def load_users(self):
         """Kullanıcı verilerini yükle"""
@@ -67,6 +79,16 @@ class DataManager(QObject):
         except FileNotFoundError:
             self._signatures = []
     
+    def load_categories(self):
+        """Kategorileri yükler."""
+        try:
+            with open(os.path.join(self.data_dir, "mock", "categories.json"), "r", encoding="utf-8") as f:
+                self._categories = json.load(f)
+        except FileNotFoundError:
+            self._categories = []
+        except json.JSONDecodeError:
+            self._categories = []
+    
     def save_all(self):
         """Tüm verileri kaydet"""
         self.save_users()
@@ -97,6 +119,12 @@ class DataManager(QObject):
         """İmza verilerini kaydet"""
         with open(os.path.join(self.data_dir, "signatures.json"), "w", encoding="utf-8") as f:
             json.dump(signatures, f, ensure_ascii=False, indent=4)
+    
+    def save_categories(self):
+        """Kategorileri kaydeder."""
+        os.makedirs(os.path.dirname(os.path.join(self.data_dir, "mock", "categories.json")), exist_ok=True)
+        with open(os.path.join(self.data_dir, "mock", "categories.json"), "w", encoding="utf-8") as f:
+            json.dump(self._categories, f, ensure_ascii=False, indent=4)
     
     def get_users(
         self,
@@ -178,41 +206,49 @@ class DataManager(QObject):
                 return license
         return None
     
-    def add_template(self, template_data: dict) -> bool:
-        """Yeni şablon ekle"""
-        try:
-            templates = self.get_templates()
-            templates.append(template_data)
-            self.save_templates(templates)
-            return True
-        except Exception as e:
-            print(f"Şablon eklenirken hata oluştu: {e}")
-            return False
-    
-    def update_template(self, template_data: dict) -> bool:
-        """Şablon güncelle"""
-        try:
-            templates = self.get_templates()
-            for i, t in enumerate(templates):
-                if t["id"] == template_data["id"]:
-                    templates[i] = template_data
-                    break
-            self.save_templates(templates)
-            return True
-        except Exception as e:
-            print(f"Şablon güncellenirken hata oluştu: {e}")
-            return False
-    
-    def delete_template(self, template_id: str) -> bool:
-        """Şablon sil"""
-        try:
-            templates = self.get_templates()
-            templates = [t for t in templates if t["id"] != template_id]
-            self.save_templates(templates)
-            return True
-        except Exception as e:
-            print(f"Şablon silinirken hata oluştu: {e}")
-            return False
+    def add_template(self, name, content, description="", category_id=None, is_active=True):
+        """Yeni şablon ekler."""
+        template = {
+            "id": str(uuid.uuid4()),
+            "name": name,
+            "content": content,
+            "description": description,
+            "category_id": category_id,
+            "is_active": is_active,
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+        self._templates.append(template)
+        self.save_templates()
+        return template
+
+    def update_template(self, template_id, name=None, content=None, description=None, category_id=None, is_active=None):
+        """Şablon bilgilerini günceller."""
+        for template in self._templates:
+            if template["id"] == template_id:
+                if name is not None:
+                    template["name"] = name
+                if content is not None:
+                    template["content"] = content
+                if description is not None:
+                    template["description"] = description
+                if category_id is not None:
+                    template["category_id"] = category_id
+                if is_active is not None:
+                    template["is_active"] = is_active
+                template["updated_at"] = datetime.now().isoformat()
+                self.save_templates()
+                return True
+        return False
+
+    def get_templates_by_category(self, category_id):
+        """Kategoriye göre şablonları döndürür."""
+        return [t for t in self._templates if t.get("category_id") == category_id]
+
+    def get_template_categories(self):
+        """Şablonların kategorilerini döndürür."""
+        category_ids = set(t.get("category_id") for t in self._templates if t.get("category_id"))
+        return [self.get_category_by_id(cid) for cid in category_ids if self.get_category_by_id(cid)]
     
     def get_departments(self):
         """Sistemdeki tüm departmanları döndürür."""
@@ -520,4 +556,383 @@ class DataManager(QObject):
         """Yedekleme aralığını saat cinsinden ayarlar"""
         self._backup_interval = hours * 60 * 60 * 1000
         if self._backup_timer is not None:
-            self._backup_timer.setInterval(self._backup_interval) 
+            self._backup_timer.setInterval(self._backup_interval)
+
+    def get_categories(self):
+        """Tüm kategorileri döndürür."""
+        return self._categories
+
+    def add_category(self, name, description=""):
+        """Yeni kategori ekler."""
+        category = {
+            "id": str(uuid.uuid4()),
+            "name": name,
+            "description": description,
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+        self._categories.append(category)
+        self.save_categories()
+        return category
+
+    def update_category(self, category_id, name=None, description=None):
+        """Kategori bilgilerini günceller."""
+        for category in self._categories:
+            if category["id"] == category_id:
+                if name is not None:
+                    category["name"] = name
+                if description is not None:
+                    category["description"] = description
+                category["updated_at"] = datetime.now().isoformat()
+                self.save_categories()
+                return True
+        return False
+
+    def delete_category(self, category_id):
+        """Kategori siler."""
+        self._categories = [c for c in self._categories if c["id"] != category_id]
+        self.save_categories()
+        return True
+
+    def get_category_by_id(self, category_id):
+        """ID'ye göre kategori döndürür."""
+        for category in self._categories:
+            if category["id"] == category_id:
+                return category
+        return None
+
+    def get_license_statistics(self):
+        """Lisans istatistiklerini döndürür."""
+        if self._licenses is None:
+            self.load_licenses()
+        
+        total_licenses = len(self._licenses)
+        active_licenses = len([l for l in self._licenses if l["status"] == "ACTIVE"])
+        expired_licenses = len([l for l in self._licenses if l["status"] == "EXPIRED"])
+        suspended_licenses = len([l for l in self._licenses if l["status"] == "SUSPENDED"])
+        
+        # Lisans türlerine göre dağılım
+        type_distribution = {}
+        for license in self._licenses:
+            type_distribution[license["type"]] = type_distribution.get(license["type"], 0) + 1
+        
+        # Son 30 gün içinde eklenen lisanslar
+        thirty_days_ago = datetime.now() - timedelta(days=30)
+        new_licenses = len([
+            l for l in self._licenses
+            if datetime.fromisoformat(l["created_at"]) >= thirty_days_ago
+        ])
+        
+        # Yakında süresi dolacak lisanslar (30 gün içinde)
+        soon_to_expire = []
+        today = datetime.now()
+        for license in self._licenses:
+            if license["status"] != "ACTIVE":
+                continue
+            end_date = datetime.fromisoformat(license["end_date"])
+            days_left = (end_date - today).days
+            if 0 <= days_left <= 30:
+                soon_to_expire.append({
+                    "key": license["key"],
+                    "days_left": days_left,
+                    "user_id": license["user_id"]
+                })
+        
+        return {
+            "total": total_licenses,
+            "active": active_licenses,
+            "expired": expired_licenses,
+            "suspended": suspended_licenses,
+            "type_distribution": type_distribution,
+            "new_licenses_30d": new_licenses,
+            "soon_to_expire": soon_to_expire
+        }
+
+    def get_license_usage_history(self, license_key):
+        """Lisans kullanım geçmişini döndürür."""
+        try:
+            with open(os.path.join(self.data_dir, "mock", "license_history.json"), "r", encoding="utf-8") as f:
+                history = json.load(f)
+                return history.get(license_key, [])
+        except FileNotFoundError:
+            return []
+        except json.JSONDecodeError:
+            return []
+
+    def add_license_usage(self, license_key, user_id, action):
+        """Lisans kullanım kaydı ekler."""
+        try:
+            history_file = os.path.join(self.data_dir, "mock", "license_history.json")
+            try:
+                with open(history_file, "r", encoding="utf-8") as f:
+                    history = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                history = {}
+            
+            if license_key not in history:
+                history[license_key] = []
+            
+            history[license_key].append({
+                "timestamp": datetime.now().isoformat(),
+                "user_id": user_id,
+                "action": action
+            })
+            
+            os.makedirs(os.path.dirname(history_file), exist_ok=True)
+            with open(history_file, "w", encoding="utf-8") as f:
+                json.dump(history, f, ensure_ascii=False, indent=4)
+            
+            return True
+        except Exception as e:
+            print(f"Lisans kullanım kaydı eklenirken hata: {str(e)}")
+            return False
+
+    def check_license_renewals(self):
+        """Yenilenmesi gereken lisansları kontrol eder."""
+        if self._licenses is None:
+            self.load_licenses()
+        
+        today = datetime.now()
+        renewals = []
+        
+        for license in self._licenses:
+            if license["status"] != "ACTIVE":
+                continue
+            
+            end_date = datetime.fromisoformat(license["end_date"])
+            days_left = (end_date - today).days
+            
+            if days_left <= 30:  # 30 gün veya daha az kaldıysa
+                user = self.get_user_by_id(license["user_id"])
+                renewals.append({
+                    "license_key": license["key"],
+                    "days_left": days_left,
+                    "user": user,
+                    "type": license["type"],
+                    "end_date": license["end_date"]
+                })
+        
+        return sorted(renewals, key=lambda x: x["days_left"])
+
+    def bulk_update_licenses(self, license_keys, update_data):
+        """Birden fazla lisansı günceller."""
+        updated = 0
+        for key in license_keys:
+            license = self.get_license_by_key(key)
+            if license:
+                license.update(update_data)
+                updated += 1
+        
+        if updated > 0:
+            self.save_licenses()
+        
+        return updated
+
+    def bulk_delete_licenses(self, license_keys):
+        """Birden fazla lisansı siler."""
+        initial_count = len(self._licenses)
+        self._licenses = [l for l in self._licenses if l["key"] not in license_keys]
+        deleted_count = initial_count - len(self._licenses)
+        
+        if deleted_count > 0:
+            self.save_licenses()
+        
+        return deleted_count
+
+    def _load_groups(self) -> List[Dict[str, Any]]:
+        """Grupları yükler."""
+        if os.path.exists(self.groups_file):
+            with open(self.groups_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        return []
+        
+    def _save_groups(self):
+        """Grupları kaydeder."""
+        with open(self.groups_file, "w", encoding="utf-8") as f:
+            json.dump(self._groups, f, ensure_ascii=False, indent=4)
+            
+    def create_group(self, name: str, description: str = "") -> Dict[str, Any]:
+        """Yeni bir grup oluşturur."""
+        group = {
+            "id": str(uuid.uuid4()),
+            "name": name,
+            "description": description,
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+        
+        self._groups.append(group)
+        self._save_groups()
+        
+        return group
+        
+    def update_group(self, group_id: str, group_data: Dict[str, Any]) -> bool:
+        """Bir grubu günceller."""
+        for i, group in enumerate(self._groups):
+            if group["id"] == group_id:
+                group_data["id"] = group_id
+                group_data["created_at"] = group["created_at"]
+                group_data["updated_at"] = datetime.now().isoformat()
+                
+                self._groups[i] = group_data
+                self._save_groups()
+                
+                return True
+        return False
+        
+    def delete_group(self, group_id: str) -> bool:
+        """Bir grubu siler."""
+        for i, group in enumerate(self._groups):
+            if group["id"] == group_id:
+                del self._groups[i]
+                self._save_groups()
+                return True
+        return False
+        
+    def get_group_by_id(self, group_id: str) -> Dict[str, Any]:
+        """Belirli bir grubu getirir."""
+        for group in self._groups:
+            if group["id"] == group_id:
+                return group
+        return None
+        
+    def get_all_groups(self) -> List[Dict[str, Any]]:
+        """Tüm grupları getirir."""
+        return self._groups
+
+    def _load_signatures(self):
+        """İmza şablonlarını yükler."""
+        try:
+            if not os.path.exists(self.signatures_file):
+                return []
+            with open(self.signatures_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                self.logger.log_info("data", f"{len(data)} imza şablonu yüklendi")
+                return data
+        except Exception as e:
+            self.logger.log_error("data", e, "İmza şablonları yüklenirken hata")
+            return []
+
+    def _save_signatures(self):
+        """İmza şablonlarını kaydeder."""
+        try:
+            with open(self.signatures_file, "w", encoding="utf-8") as f:
+                json.dump(self.signatures, f, ensure_ascii=False, indent=2)
+            self.logger.log_info("data", f"{len(self.signatures)} imza şablonu kaydedildi")
+            return True
+        except Exception as e:
+            self.logger.log_error("data", e, "İmza şablonları kaydedilirken hata")
+            return False
+
+    def get_signature_templates(self):
+        """Tüm imza şablonlarını döndürür."""
+        try:
+            self.logger.log_data_operation("read", "signature_templates", details=f"Toplam: {len(self.signatures)}")
+            return self.signatures
+        except Exception as e:
+            self.logger.log_error("data", e, "İmza şablonları alınırken hata")
+            return []
+
+    def get_signature_template(self, template_id):
+        """Belirli bir imza şablonunu döndürür."""
+        try:
+            template = next((t for t in self.signatures if t["id"] == template_id), None)
+            if template:
+                self.logger.log_data_operation(
+                    "read", "signature_template",
+                    template_id, f"İsim: {template['name']}"
+                )
+            return template
+        except Exception as e:
+            self.logger.log_error("data", e, f"İmza şablonu alınırken hata: ID={template_id}")
+            return None
+
+    def add_signature_template(self, template_data):
+        """Yeni bir imza şablonu ekler."""
+        try:
+            template = {
+                "id": template_data.get("id", len(self.signatures) + 1),
+                "name": template_data["name"],
+                "description": template_data.get("description", ""),
+                "content": template_data["content"],
+                "updated_at": datetime.now().isoformat()
+            }
+            self.signatures.append(template)
+            success = self._save_signatures()
+            if success:
+                self.logger.log_data_operation(
+                    "create", "signature_template",
+                    template["id"], f"İsim: {template['name']}"
+                )
+            return success
+        except Exception as e:
+            self.logger.log_error("data", e, "İmza şablonu eklenirken hata")
+            return False
+
+    def update_signature_template(self, template_id, template_data):
+        """Bir imza şablonunu günceller."""
+        try:
+            for i, template in enumerate(self.signatures):
+                if template["id"] == template_id:
+                    self.signatures[i] = {
+                        "id": template_id,
+                        "name": template_data["name"],
+                        "description": template_data.get("description", ""),
+                        "content": template_data["content"],
+                        "updated_at": datetime.now().isoformat()
+                    }
+                    success = self._save_signatures()
+                    if success:
+                        self.logger.log_data_operation(
+                            "update", "signature_template",
+                            template_id, f"İsim: {template_data['name']}"
+                        )
+                    return success
+            return False
+        except Exception as e:
+            self.logger.log_error("data", e, f"İmza şablonu güncellenirken hata: ID={template_id}")
+            return False
+
+    def delete_signature_template(self, template_id):
+        """Bir imza şablonunu siler."""
+        try:
+            template = next((t for t in self.signatures if t["id"] == template_id), None)
+            if template:
+                self.signatures = [t for t in self.signatures if t["id"] != template_id]
+                success = self._save_signatures()
+                if success:
+                    self.logger.log_data_operation(
+                        "delete", "signature_template",
+                        template_id, f"İsim: {template['name']}"
+                    )
+                return success
+            return False
+        except Exception as e:
+            self.logger.log_error("data", e, f"İmza şablonu silinirken hata: ID={template_id}")
+            return False
+
+    def get_template_groups(self, template_id):
+        """Bir imza şablonuna atanmış grupları döndürür."""
+        template_groups = []
+        for group in self._groups:
+            if "signature_template_id" in group and group["signature_template_id"] == template_id:
+                template_groups.append(group)
+        return template_groups
+
+    def assign_template_to_groups(self, template_id, group_ids):
+        """Bir imza şablonunu belirtilen gruplara atar."""
+        try:
+            # Önce tüm gruplardan bu şablonu kaldır
+            for group in self._groups:
+                if "signature_template_id" in group and group["signature_template_id"] == template_id:
+                    del group["signature_template_id"]
+            
+            # Seçili gruplara şablonu ata
+            for group in self._groups:
+                if group["id"] in group_ids:
+                    group["signature_template_id"] = template_id
+            
+            return self._save_groups()
+        except Exception as e:
+            print(f"İmza şablonu gruplara atanırken hata oluştu: {e}")
+            return False 

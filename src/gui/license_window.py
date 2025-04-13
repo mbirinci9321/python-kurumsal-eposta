@@ -3,13 +3,17 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QTableWidget, QTableWidgetItem,
     QComboBox, QLineEdit, QFormLayout, QMessageBox,
     QTextEdit, QDialog, QDialogButtonBox, QDateEdit,
-    QToolBar, QFileDialog, QHeaderView, QMenu
+    QToolBar, QFileDialog, QHeaderView, QMenu, QGroupBox,
+    QCheckBox, QSpinBox
 )
 from PyQt6.QtGui import QAction
 from PyQt6.QtCore import Qt, QDate
 from utils.data_manager import DataManager
 import csv
 import json
+from datetime import datetime, timedelta
+from utils.license_manager import LicenseManager
+from utils.auth_manager import AuthManager
 
 class LicenseDialog(QDialog):
     """Lisans ekleme/düzenleme dialogu."""
@@ -29,12 +33,23 @@ class LicenseDialog(QDialog):
         # Form alanları
         form_layout = QFormLayout()
         
-        # Anahtar
-        self.key_edit = QLineEdit()
+        # Kullanıcı
+        self.user_combo = QComboBox()
+        users = self.data_manager.get_users()
+        for user in users:
+            self.user_combo.addItem(user.get("name", ""), user.get("id", ""))
         if license:
-            self.key_edit.setText(license["key"])
-            self.key_edit.setEnabled(False)  # Mevcut lisans anahtarı değiştirilemez
-        form_layout.addRow("Anahtar:", self.key_edit)
+            index = self.user_combo.findData(license["user_id"])
+            if index >= 0:
+                self.user_combo.setCurrentIndex(index)
+        form_layout.addRow("Kullanıcı:", self.user_combo)
+        
+        # Lisans anahtarı
+        self.key_input = QLineEdit()
+        if license:
+            self.key_input.setText(license["key"])
+            self.key_input.setEnabled(False)  # Mevcut lisans anahtarı değiştirilemez
+        form_layout.addRow("Lisans Anahtarı:", self.key_input)
         
         # Tür
         self.type_combo = QComboBox()
@@ -54,23 +69,12 @@ class LicenseDialog(QDialog):
         form_layout.addRow("Başlangıç:", self.start_date_edit)
         
         # Bitiş tarihi
-        self.end_date_edit = QDateEdit()
-        self.end_date_edit.setCalendarPopup(True)
-        self.end_date_edit.setDate(QDate.currentDate().addYears(1))
+        self.expiry_input = QDateEdit()
+        self.expiry_input.setCalendarPopup(True)
+        self.expiry_input.setDate(QDate.currentDate().addYears(1))
         if license:
-            self.end_date_edit.setDate(QDate.fromString(license["end_date"], "yyyy-MM-dd"))
-        form_layout.addRow("Bitiş:", self.end_date_edit)
-        
-        # Kullanıcı
-        self.user_combo = QComboBox()
-        users = self.data_manager.get_users()
-        for user in users:
-            self.user_combo.addItem(user["full_name"], user["id"])
-        if license:
-            index = self.user_combo.findData(license["user_id"])
-            if index >= 0:
-                self.user_combo.setCurrentIndex(index)
-        form_layout.addRow("Kullanıcı:", self.user_combo)
+            self.expiry_input.setDate(QDate.fromString(license["end_date"], "yyyy-MM-dd"))
+        form_layout.addRow("Bitiş:", self.expiry_input)
         
         # Durum
         self.status_combo = QComboBox()
@@ -93,10 +97,10 @@ class LicenseDialog(QDialog):
     
     def accept(self):
         """Dialog verilerini kontrol eder ve kaydeder."""
-        key = self.key_edit.text().strip()
+        key = self.key_input.text().strip()
         type = self.type_combo.currentText()
         start_date = self.start_date_edit.date().toString("yyyy-MM-dd")
-        end_date = self.end_date_edit.date().toString("yyyy-MM-dd")
+        end_date = self.expiry_input.date().toString("yyyy-MM-dd")
         user_id = self.user_combo.currentData()
         status = self.status_combo.currentText()
         
@@ -134,266 +138,320 @@ class LicenseDialog(QDialog):
         except Exception as e:
             QMessageBox.critical(self, "Hata", str(e))
 
-class LicenseWindow(QWidget):
+    def get_license_data(self):
+        """Dialog verilerini döndürür."""
+        return {
+            'user_id': self.user_combo.currentData(),
+            'key': self.key_input.text(),
+            'expiry_date': self.expiry_input.date().toString(Qt.DateFormat.ISODate)
+        }
+
+class LicenseStatisticsDialog(QDialog):
+    def __init__(self, parent=None, data_manager=None):
+        super().__init__(parent)
+        self.data_manager = data_manager
+        self.setWindowTitle("Lisans İstatistikleri")
+        self.setMinimumWidth(600)
+        self.setMinimumHeight(400)
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+        
+        # İstatistik grupları
+        stats = self.data_manager.get_license_statistics()
+        
+        # Genel istatistikler
+        general_group = QGroupBox("Genel İstatistikler")
+        general_layout = QFormLayout()
+        general_layout.addRow("Toplam Lisans:", QLabel(str(stats["total"])))
+        general_layout.addRow("Aktif Lisans:", QLabel(str(stats["active"])))
+        general_layout.addRow("Süresi Dolmuş:", QLabel(str(stats["expired"])))
+        general_layout.addRow("Askıya Alınmış:", QLabel(str(stats["suspended"])))
+        general_layout.addRow("Son 30 Gün İçinde Eklenen:", QLabel(str(stats["new_licenses_30d"])))
+        general_group.setLayout(general_layout)
+        layout.addWidget(general_group)
+        
+        # Lisans türü dağılımı
+        type_group = QGroupBox("Lisans Türü Dağılımı")
+        type_layout = QFormLayout()
+        for type_name, count in stats["type_distribution"].items():
+            type_layout.addRow(f"{type_name}:", QLabel(str(count)))
+        type_group.setLayout(type_layout)
+        layout.addWidget(type_group)
+        
+        # Yakında süresi dolacak lisanslar
+        if stats["soon_to_expire"]:
+            expiring_group = QGroupBox("Yakında Süresi Dolacak Lisanslar")
+            expiring_layout = QFormLayout()
+            for license in stats["soon_to_expire"]:
+                user = self.data_manager.get_user_by_id(license["user_id"])
+                user_name = user["full_name"] if user else "Bilinmeyen Kullanıcı"
+                expiring_layout.addRow(
+                    f"{license['key']} ({user_name}):",
+                    QLabel(f"{license['days_left']} gün kaldı")
+                )
+            expiring_group.setLayout(expiring_layout)
+            layout.addWidget(expiring_group)
+        
+        # Kapat butonu
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+        
+        self.setLayout(layout)
+
+class BulkLicenseDialog(QDialog):
+    def __init__(self, parent=None, data_manager=None, selected_licenses=None):
+        super().__init__(parent)
+        self.data_manager = data_manager
+        self.selected_licenses = selected_licenses or []
+        self.setWindowTitle("Toplu Lisans İşlemi")
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QVBoxLayout()
+        
+        # Seçili lisans sayısı
+        layout.addWidget(QLabel(f"Seçili Lisans Sayısı: {len(self.selected_licenses)}"))
+        
+        # İşlem seçenekleri
+        form_layout = QFormLayout()
+        
+        # Durum güncelleme
+        self.status_combo = QComboBox()
+        self.status_combo.addItems(["ACTIVE", "SUSPENDED", "EXPIRED"])
+        form_layout.addRow("Yeni Durum:", self.status_combo)
+        
+        # Süre uzatma
+        self.extend_spin = QSpinBox()
+        self.extend_spin.setRange(1, 365)
+        self.extend_spin.setValue(30)
+        form_layout.addRow("Süre Uzatma (Gün):", self.extend_spin)
+        
+        layout.addLayout(form_layout)
+        
+        # Butonlar
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+        
+        self.setLayout(layout)
+
+    def accept(self):
+        """Toplu güncelleme işlemini gerçekleştirir."""
+        try:
+            # Durum güncellemesi
+            new_status = self.status_combo.currentText()
+            
+            # Süre uzatma
+            days_to_extend = self.extend_spin.value()
+            
+            # Güncelleme verilerini hazırla
+            update_data = {
+                "status": new_status,
+                "updated_at": datetime.now().isoformat()
+            }
+            
+            # Lisansları güncelle
+            updated = self.data_manager.bulk_update_licenses(self.selected_licenses, update_data)
+            
+            if updated > 0:
+                QMessageBox.information(
+                    self,
+                    "Başarılı",
+                    f"{updated} lisans başarıyla güncellendi."
+                )
+                super().accept()
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Uyarı",
+                    "Hiçbir lisans güncellenemedi."
+                )
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Hata",
+                f"Lisanslar güncellenirken bir hata oluştu: {str(e)}"
+            )
+
+class LicenseWindow(QMainWindow):
     """Lisans yönetimi penceresi."""
     
-    def __init__(self, data_manager, icon_manager):
-        super().__init__()
-        self.data_manager = data_manager
-        self.icon_manager = icon_manager
+    def __init__(self, parent=None):
+        super().__init__(parent)
         
-        # Ana layout
-        self.main_layout = QVBoxLayout()
-        self.setLayout(self.main_layout)
+        # Get managers from parent
+        main_window = self.parent()
+        if main_window:
+            if hasattr(main_window, 'license_manager'):
+                self.license_manager = main_window.license_manager
+            if hasattr(main_window, 'auth_manager'):
+                self.auth_manager = main_window.auth_manager
+            if hasattr(main_window, 'data_manager'):
+                self.data_manager = main_window.data_manager
         
-        # Araç çubuğunu oluştur
-        self.create_toolbar()
+        # If managers not found in parent, create new instances
+        if not hasattr(self, 'license_manager'):
+            from src.utils.license_manager import LicenseManager
+            self.license_manager = LicenseManager()
+        if not hasattr(self, 'auth_manager'):
+            from src.utils.auth_manager import AuthManager
+            self.auth_manager = AuthManager()
+        if not hasattr(self, 'data_manager'):
+            from src.utils.data_manager import DataManager
+            self.data_manager = DataManager()
         
-        # Filtreleme alanını oluştur
-        self.create_filter_area()
+        self.setWindowTitle("Lisans Yönetimi")
+        self.setMinimumSize(800, 600)
         
-        # Lisans tablosunu oluştur
-        self.create_license_table()
+        # Create central widget
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
         
-        # Alt araç çubuğunu oluştur
-        self.create_bottom_toolbar()
+        # Create main layout
+        self.main_layout = QVBoxLayout(central_widget)
+        
+        self.setup_ui()
+        self.load_licenses()  # Initialize with licenses
+        
+    def setup_ui(self):
+        # Üst toolbar
+        toolbar = QHBoxLayout()
+        
+        self.add_button = QPushButton("Yeni Lisans")
+        self.add_button.clicked.connect(self.show_add_dialog)
+        toolbar.addWidget(self.add_button)
+        
+        self.renew_button = QPushButton("Yenile")
+        self.renew_button.clicked.connect(self.renew_license)
+        toolbar.addWidget(self.renew_button)
+        
+        self.deactivate_button = QPushButton("Devre Dışı Bırak")
+        self.deactivate_button.clicked.connect(self.deactivate_license)
+        toolbar.addWidget(self.deactivate_button)
+        
+        self.main_layout.addLayout(toolbar)
+        
+        # Lisans tablosu
+        self.table = QTableWidget()
+        self.table.setColumnCount(6)
+        self.table.setHorizontalHeaderLabels([
+            "ID", "Kullanıcı ID", "Oluşturulma Tarihi",
+            "Bitiş Tarihi", "Özellikler", "Durum"
+        ])
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self.show_context_menu)
+        
+        self.main_layout.addWidget(self.table)
         
         # Lisansları yükle
         self.load_licenses()
-    
-    def create_toolbar(self):
-        """Araç çubuğunu oluşturur."""
-        toolbar = QHBoxLayout()
         
-        # Yeni lisans ekle butonu
-        add_button = QPushButton("Ekle")
-        add_button.clicked.connect(self.show_new_license_dialog)
-        self.icon_manager.set_icon(add_button, "add")
-        toolbar.addWidget(add_button)
-        
-        # Lisans düzenle butonu
-        edit_button = QPushButton("Düzenle")
-        edit_button.clicked.connect(self.show_edit_license_dialog)
-        self.icon_manager.set_icon(edit_button, "edit")
-        toolbar.addWidget(edit_button)
-        
-        # Lisans sil butonu
-        delete_button = QPushButton("Sil")
-        delete_button.clicked.connect(self.delete_license)
-        self.icon_manager.set_icon(delete_button, "delete")
-        toolbar.addWidget(delete_button)
-        
-        toolbar.addStretch()
-        
-        # Yenile butonu
-        refresh_button = QPushButton("Yenile")
-        refresh_button.clicked.connect(self.load_licenses)
-        self.icon_manager.set_icon(refresh_button, "refresh")
-        toolbar.addWidget(refresh_button)
-        
-        self.main_layout.addLayout(toolbar)
-    
-    def create_filter_area(self):
-        """Filtre alanını oluştur"""
-        filter_widget = QWidget()
-        filter_layout = QHBoxLayout()
-        
-        # Lisans türü filtresi
-        self.type_combo = QComboBox()
-        self.type_combo.addItem("Tüm Türler", "")
-        for license_type in self.data_manager.get_license_types():
-            self.type_combo.addItem(license_type, license_type)
-        self.type_combo.currentIndexChanged.connect(self.filter_licenses)
-        filter_layout.addWidget(QLabel("Tür:"))
-        filter_layout.addWidget(self.type_combo)
-        
-        # Durum filtresi
-        self.status_combo = QComboBox()
-        self.status_combo.addItem("Tüm Durumlar", "")
-        for status in self.data_manager.get_license_statuses():
-            self.status_combo.addItem(status, status)
-        self.status_combo.currentIndexChanged.connect(self.filter_licenses)
-        filter_layout.addWidget(QLabel("Durum:"))
-        filter_layout.addWidget(self.status_combo)
-        
-        # Arama kutusu
-        self.search_edit = QLineEdit()
-        self.search_edit.setPlaceholderText("Lisans ara...")
-        self.search_edit.textChanged.connect(self.filter_licenses)
-        filter_layout.addWidget(QLabel("Ara:"))
-        filter_layout.addWidget(self.search_edit)
-        
-        filter_widget.setLayout(filter_layout)
-        self.main_layout.addWidget(filter_widget)
-    
-    def create_license_table(self):
-        """Lisans tablosunu oluşturur."""
-        self.license_table = QTableWidget()
-        self.license_table.setColumnCount(6)
-        self.license_table.setHorizontalHeaderLabels(["ID", "Lisans Anahtarı", "Tip", "Başlangıç", "Bitiş", "Durum"])
-        self.license_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.license_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.license_table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
-        self.license_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.license_table.customContextMenuRequested.connect(self.show_context_menu)
-        self.license_table.setSortingEnabled(True)
-        self.main_layout.addWidget(self.license_table)
-    
-    def create_bottom_toolbar(self):
-        """Alt araç çubuğunu oluşturur."""
-        bottom_toolbar = QToolBar()
-        
-        # Durum etiketi
-        self.status_label = QLabel("Toplam 0 lisans")
-        bottom_toolbar.addWidget(self.status_label)
-        
-        bottom_toolbar.addSeparator()
-        
-        # Yenile butonu
-        refresh_action = QAction("Yenile", self)
-        self.icon_manager.set_icon(refresh_action, "refresh")
-        refresh_action.triggered.connect(self.load_licenses)
-        bottom_toolbar.addAction(refresh_action)
-        
-        self.main_layout.addWidget(bottom_toolbar)
-    
     def load_licenses(self):
-        """Lisansları yükler ve tabloyu günceller."""
-        # Lisans türü ve durum listelerini güncelle
-        types = self.data_manager.get_license_types()
-        self.type_combo.clear()
-        self.type_combo.addItem("Tümü")
-        self.type_combo.addItems(types)
+        """Lisansları tabloya yükler."""
+        licenses = self.license_manager.get_all_licenses()
+        self.table.setRowCount(len(licenses))
         
-        statuses = self.data_manager.get_license_statuses()
-        self.status_combo.clear()
-        self.status_combo.addItem("Tümü")
-        self.status_combo.addItems(statuses)
-        
-        # Lisansları yükle
-        licenses = self.data_manager.get_licenses()
-        self.license_table.setRowCount(len(licenses))
-        
-        for row, license in enumerate(licenses):
-            self.license_table.setItem(row, 0, QTableWidgetItem(str(license["id"])))
-            self.license_table.setItem(row, 1, QTableWidgetItem(license["key"]))
-            self.license_table.setItem(row, 2, QTableWidgetItem(license["type"]))
-            self.license_table.setItem(row, 3, QTableWidgetItem(license["start_date"]))
-            self.license_table.setItem(row, 4, QTableWidgetItem(license["end_date"]))
-            self.license_table.setItem(row, 5, QTableWidgetItem(license["status"]))
-        
-        self.license_table.resizeColumnsToContents()
-        self.status_label.setText(f"Toplam {len(licenses)} lisans")
-    
-    def filter_licenses(self):
-        """Lisansları filtreler ve tabloya ekler."""
-        type = self.type_combo.currentText()
-        status = self.status_combo.currentText()
-        search_text = self.search_edit.text().lower()
-        
-        # Tüm lisansları al
-        licenses = self.data_manager.get_licenses()
-        
-        # Tür filtresi
-        if type != "Tümü":
-            licenses = [l for l in licenses if l["type"] == type]
-        
-        # Durum filtresi
-        if status != "Tümü":
-            licenses = [l for l in licenses if l["status"] == status]
-        
-        # Arama filtresi
-        if search_text:
-            licenses = [
-                l for l in licenses
-                if search_text in l["key"].lower() or
-                search_text in str(l["user_id"]).lower()
-            ]
-        
-        # Tabloyu güncelle
-        self.license_table.setRowCount(len(licenses))
-        for row, license in enumerate(licenses):
-            self.license_table.setItem(row, 0, QTableWidgetItem(str(license["id"])))
-            self.license_table.setItem(row, 1, QTableWidgetItem(license["key"]))
-            self.license_table.setItem(row, 2, QTableWidgetItem(license["type"]))
-            self.license_table.setItem(row, 3, QTableWidgetItem(license["start_date"]))
-            self.license_table.setItem(row, 4, QTableWidgetItem(license["end_date"]))
-            self.license_table.setItem(row, 5, QTableWidgetItem(license["status"]))
-        
-        # Sütun genişliklerini ayarla
-        self.license_table.resizeColumnsToContents()
-        
-        # Durum etiketini güncelle
-        self.status_label.setText(f"Toplam {len(licenses)} lisans")
-    
-    def show_new_license_dialog(self):
-        """Yeni lisans ekleme penceresini gösterir."""
+        for row, (license_id, license_data) in enumerate(licenses.items()):
+            self.table.setItem(row, 0, QTableWidgetItem(license_id))
+            self.table.setItem(row, 1, QTableWidgetItem(license_data["user_id"]))
+            self.table.setItem(row, 2, QTableWidgetItem(license_data["created_at"]))
+            self.table.setItem(row, 3, QTableWidgetItem(license_data["expiry_date"]))
+            self.table.setItem(row, 4, QTableWidgetItem(", ".join(license_data["features"])))
+            self.table.setItem(row, 5, QTableWidgetItem("Aktif" if license_data["is_active"] else "Pasif"))
+            
+    def show_add_dialog(self):
+        """Yeni lisans ekleme dialogunu gösterir."""
         dialog = LicenseDialog(self, self.data_manager)
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            self.load_licenses()
-    
-    def show_edit_license_dialog(self):
-        """Lisans düzenleme dialogunu gösterir."""
-        selected_items = self.license_table.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir lisans seçin.")
-            return
-        
-        license_id = self.license_table.item(selected_items[0].row(), 0).text()
-        license = self.data_manager.get_license_by_id(license_id)
-        
-        if license:
-            dialog = LicenseDialog(self, self.data_manager, license)
-            if dialog.exec() == QDialog.DialogCode.Accepted:
+            license_data = dialog.get_license_data()
+            if self.data_manager.add_license(license_data):
                 self.load_licenses()
+            else:
+                QMessageBox.critical(self, "Hata", "Lisans eklenirken bir hata oluştu.")
     
-    def delete_license(self):
-        """Seçili lisansı siler."""
-        selected_row = self.license_table.currentRow()
+    def show_edit_dialog(self):
+        """Lisans düzenleme dialogunu gösterir."""
+        selected_row = self.table.currentRow()
         if selected_row < 0:
-            QMessageBox.warning(self, "Uyarı", "Lütfen silmek istediğiniz lisansı seçin.")
+            QMessageBox.warning(self, "Uyarı", "Lütfen düzenlemek istediğiniz lisansı seçin.")
             return
+            
+        license_id = int(self.table.item(selected_row, 0).text())
+        license_data = self.data_manager.get_license(license_id)
         
-        license_id = self.license_table.item(selected_row, 0).text()
-        license = self.data_manager.get_license_by_id(license_id)
+        if license_data:
+            dialog = LicenseDialog(self, self.data_manager, license_data)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                updated_data = dialog.get_license_data()
+                if self.data_manager.update_license(license_id, updated_data):
+                    self.load_licenses()
+                else:
+                    QMessageBox.critical(self, "Hata", "Lisans güncellenirken bir hata oluştu.")
+                
+    def renew_license(self):
+        """Seçili lisansı yeniler."""
+        selected_row = self.table.currentRow()
+        if selected_row < 0:
+            QMessageBox.warning(self, "Uyarı", "Lütfen yenilemek istediğiniz lisansı seçin.")
+            return
+            
+        license_id = self.table.item(selected_row, 0).text()
+        
+        dialog = LicenseDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            data = dialog.get_license_data()
+            success, message = self.license_manager.renew_license(
+                license_id,
+                data["duration_days"]
+            )
+            if success:
+                QMessageBox.information(self, "Başarılı", message)
+                self.load_licenses()
+            else:
+                QMessageBox.warning(self, "Hata", message)
+                
+    def deactivate_license(self):
+        """Seçili lisansı devre dışı bırakır."""
+        selected_row = self.table.currentRow()
+        if selected_row < 0:
+            QMessageBox.warning(self, "Uyarı", "Lütfen devre dışı bırakmak istediğiniz lisansı seçin.")
+            return
+            
+        license_id = self.table.item(selected_row, 0).text()
+        license_user = self.table.item(selected_row, 1).text()
         
         reply = QMessageBox.question(
-            self, "Onay",
-            f"{license_id} lisansını silmek istediğinizden emin misiniz?",
+            self,
+            "Onay",
+            f"{license_user} kullanıcısının lisansını devre dışı bırakmak istediğinizden emin misiniz?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         
         if reply == QMessageBox.StandardButton.Yes:
-            try:
-                self.data_manager.delete_license(license_id)
+            success, message = self.license_manager.deactivate_license(license_id)
+            if success:
+                QMessageBox.information(self, "Başarılı", message)
                 self.load_licenses()
-                QMessageBox.information(self, "Başarılı", "Lisans başarıyla silindi.")
-            except Exception as e:
-                QMessageBox.critical(self, "Hata", f"Lisans silinirken bir hata oluştu: {str(e)}")
-    
+            else:
+                QMessageBox.warning(self, "Hata", message)
+                
     def show_context_menu(self, pos):
-        """Bağlam menüsünü gösterir"""
+        """Bağlam menüsünü gösterir."""
         menu = QMenu()
         
-        edit_action = QAction("Düzenle", self)
-        edit_action.triggered.connect(self.show_edit_license_dialog)
-        self.icon_manager.set_icon(edit_action, "edit")
-        menu.addAction(edit_action)
+        renew_action = menu.addAction("Yenile")
+        renew_action.triggered.connect(self.renew_license)
         
-        delete_action = QAction("Sil", self)
-        delete_action.triggered.connect(self.delete_license)
-        self.icon_manager.set_icon(delete_action, "delete")
-        menu.addAction(delete_action)
+        deactivate_action = menu.addAction("Devre Dışı Bırak")
+        deactivate_action.triggered.connect(self.deactivate_license)
         
-        menu.addSeparator()
-        
-        # Sütun gizleme/gösterme
-        column_menu = menu.addMenu("Sütunlar")
-        for i in range(self.license_table.columnCount()):
-            action = QAction(self.license_table.horizontalHeaderItem(i).text(), self)
-            action.setCheckable(True)
-            action.setChecked(not self.license_table.isColumnHidden(i))
-            action.triggered.connect(lambda checked, col=i: self.license_table.setColumnHidden(col, not checked))
-            column_menu.addAction(action)
-        
-        menu.exec_(self.license_table.viewport().mapToGlobal(pos)) 
+        menu.exec(self.table.viewport().mapToGlobal(pos)) 

@@ -4,23 +4,27 @@ from PyQt6.QtWidgets import (
     QMenuBar, QStatusBar, QMessageBox, QDialog,
     QLabel, QLineEdit, QPushButton, QFormLayout,
     QDialogButtonBox, QHBoxLayout, QTableWidget, QTableWidgetItem,
-    QHeaderView, QFileDialog
+    QHeaderView, QFileDialog, QToolBar, QComboBox, QFrame
 )
 from PyQt6.QtCore import Qt, QSize, QMimeData
-from PyQt6.QtGui import QAction, QIcon, QDragEnterEvent, QDropEvent
+from PyQt6.QtGui import QAction, QIcon, QDragEnterEvent, QDropEvent, QFont
 from utils.data_manager import DataManager
 from utils.auth_manager import AuthManager
 from utils.logger import Logger
 from utils.crypto_manager import CryptoManager
 from utils.filters import Filter
+from utils.license_manager import LicenseManager
 from .user_window import UserWindow
 from .license_window import LicenseWindow
 from .template_window import TemplateWindow
 from .signature_window import SignatureWindow
+from .group_window import GroupWindow
+from .ad_config_window import ADConfigWindow
 from .icons import IconManager
 from .shortcuts import ShortcutManager
 from .user_management_dialog import UserManagementDialog
 from .change_password_dialog import ChangePasswordDialog
+from .backup_window import BackupWindow
 import os
 import json
 import shutil
@@ -40,6 +44,9 @@ class MainWindow(QMainWindow):
         self.auth_manager = AuthManager()
         self.logger = Logger("main")
         self.crypto_manager = CryptoManager()
+        
+        # Lisans yöneticisi
+        self.license_manager = LicenseManager()
         
         # İkon yöneticisi
         self.icon_manager = IconManager()
@@ -234,33 +241,101 @@ class MainWindow(QMainWindow):
             user_management_action.triggered.connect(self.show_user_management_dialog)
             self.icon_manager.set_icon(user_management_action, "users")
             security_menu.addAction(user_management_action)
+        
+        # İmza menüsü
+        signature_menu = menu_bar.addMenu("İmza")
+        
+        manage_signatures_action = QAction("İmza Yönetimi", self)
+        manage_signatures_action.triggered.connect(self.show_signature_window)
+        self.icon_manager.set_icon(manage_signatures_action, "file")
+        signature_menu.addAction(manage_signatures_action)
+        
+        # Grup menüsü
+        group_menu = menu_bar.addMenu("Grup")
+        
+        manage_groups_action = QAction("Grup Yönetimi", self)
+        manage_groups_action.triggered.connect(self.show_group_window)
+        self.icon_manager.set_icon(manage_groups_action, "group")
+        group_menu.addAction(manage_groups_action)
+        
+        # Active Directory menüsü
+        ad_menu = menu_bar.addMenu("Active Directory")
+        
+        ad_config_action = QAction("AD Yapılandırma", self)
+        ad_config_action.triggered.connect(self.show_ad_config_window)
+        self.icon_manager.set_icon(ad_config_action, "server")
+        ad_menu.addAction(ad_config_action)
+        
+        ad_management_action = QAction("AD Kullanıcı Yönetimi", self)
+        ad_management_action.triggered.connect(self.show_ad_management_window)
+        self.icon_manager.set_icon(ad_management_action, "users")
+        ad_menu.addAction(ad_management_action)
+        
+        # Lisans menüsü
+        license_menu = menu_bar.addMenu("Lisans")
+        
+        manage_licenses_action = QAction("Lisans Yönetimi", self)
+        manage_licenses_action.triggered.connect(self.show_license_window)
+        self.icon_manager.set_icon(manage_licenses_action, "license")
+        license_menu.addAction(manage_licenses_action)
     
     def create_tabs(self):
-        """Sekmeleri oluştur"""
-        # Kullanıcı yönetimi sekmesi
-        self.user_tab = UserWindow(self.data_manager, self.icon_manager)
-        self.central_widget.addTab(self.user_tab, "Kullanıcılar")
-        
-        # Lisans yönetimi sekmesi
-        self.license_tab = LicenseWindow(self.data_manager, self.icon_manager)
-        self.central_widget.addTab(self.license_tab, "Lisanslar")
-        
-        # Şablon yönetimi sekmesi
-        self.template_tab = TemplateWindow(self.data_manager, self.icon_manager)
-        self.central_widget.addTab(self.template_tab, "Şablonlar")
-        
+        """Tab widget'larını oluşturur."""
+        self.tab_widget = QTabWidget()
+        self.tab_widget.setStyleSheet("""
+            QTabWidget::pane {
+                border: 1px solid #E0E0E0;
+                border-radius: 4px;
+                background-color: white;
+            }
+            QTabBar::tab {
+                background-color: #F5F5F5;
+                color: #424242;
+                padding: 8px 16px;
+                border: 1px solid #E0E0E0;
+                border-bottom: none;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                margin-right: 2px;
+            }
+            QTabBar::tab:selected {
+                background-color: white;
+                border-bottom: none;
+            }
+            QTabBar::tab:hover:!selected {
+                background-color: #FAFAFA;
+            }
+        """)
+
         # İmza yönetimi sekmesi
-        self.signature_tab = SignatureWindow(self.data_manager)
-        self.central_widget.addTab(self.signature_tab, "İmzalar")
+        self.signature_window = SignatureWindow(parent=self)
+        self.tab_widget.addTab(self.signature_window, "İmza Yönetimi")
+
+        # Grup yönetimi sekmesi
+        self.group_window = GroupWindow(self.data_manager, parent=self)
+        self.tab_widget.addTab(self.group_window, "Grup Yönetimi")
+
+        # Lisans yönetimi sekmesi
+        self.license_window = LicenseWindow(parent=self)
+        self.tab_widget.addTab(self.license_window, "Lisans Yönetimi")
+
+        self.setCentralWidget(self.tab_widget)
     
     def load_data(self):
         """Tüm verileri yükler."""
         try:
             self.data_manager.load_data()
-            self.user_tab.load_users()
-            self.template_tab.load_templates()
-            self.license_tab.load_licenses()
-            self.signature_tab.load_signatures()
+            
+            # Sadece var olan pencereler için veri yükleme işlemi yap
+            if hasattr(self, 'signature_window'):
+                self.signature_window.load_signatures()
+            
+            if hasattr(self, 'group_window'):
+                self.group_window.load_groups()
+            
+            if hasattr(self, 'license_window'):
+                self.license_window.load_licenses()
+            
             self.status_bar.showMessage("Veriler başarıyla yüklendi", 3000)
         except Exception as e:
             QMessageBox.critical(self, "Hata", f"Veriler yüklenirken bir hata oluştu: {str(e)}")
@@ -487,11 +562,19 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage("Veriler geri yüklendi", 3000)
     
     def refresh_all(self):
-        """Tüm sekmeleri yeniler."""
-        self.user_tab.load_users()
-        self.template_tab.load_templates()
-        self.license_tab.load_licenses()
-        self.signature_tab.load_signatures()
+        """Tüm veriyi yeniler."""
+        self.data_manager.load_all_data()
+        
+        # Sekmeleri yenilemek için özel metodları çağır
+        if hasattr(self, 'signature_window'):
+            self.signature_window.load_signatures()
+            
+        if hasattr(self, 'group_window'):
+            self.group_window.load_groups()
+            
+        if hasattr(self, 'license_window'):
+            self.license_window.load_licenses()
+        
         self.logger.log_operation("refresh", "all_data")
         self.status_bar.showMessage("Tüm veriler yenilendi", 3000)
     
@@ -507,10 +590,8 @@ class MainWindow(QMainWindow):
     
     def show_backup_window(self):
         """Yedekleme penceresini gösterir."""
-        from gui.backup_window import BackupWindow
-        
-        dialog = BackupWindow(self, self.data_manager)
-        dialog.exec()
+        self.backup_window = BackupWindow(self.data_manager)
+        self.backup_window.show()
     
     def show_change_password_dialog(self):
         """Şifre değiştirme dialogunu gösterir"""
@@ -522,10 +603,45 @@ class MainWindow(QMainWindow):
         dialog = UserManagementDialog(self.auth_manager, self.logger, self)
         dialog.exec()
     
+    def show_signature_window(self):
+        """İmza yönetimi penceresini gösterir."""
+        self.signature_window = SignatureWindow(self.data_manager)
+        self.signature_window.show()
+    
+    def show_group_window(self):
+        """Grup yönetimi penceresini gösterir."""
+        self.group_tab = GroupWindow(self.data_manager)
+        self.group_tab.show()
+    
+    def show_license_window(self):
+        """Lisans yönetimi penceresini gösterir."""
+        self.license_window = LicenseWindow(parent=self)
+        self.license_window.show()
+    
+    def show_ad_config_window(self):
+        """AD yapılandırma penceresini gösterir."""
+        self.ad_config_window = ADConfigWindow(self)
+        self.ad_config_window.show()
+    
+    def show_ad_management_window(self):
+        """AD yönetim penceresini gösterir."""
+        self.ad_config_window = ADConfigWindow(self)
+        self.ad_config_window.show()
+    
     def closeEvent(self, event):
-        """Pencere kapatılırken çalışır"""
-        self.logger.log_operation("close", "application")
-        event.accept()
+        """Pencere kapatıldığında çalışır."""
+        reply = QMessageBox.question(
+            self,
+            "Çıkış",
+            "Uygulamadan çıkmak istediğinizden emin misiniz?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            self.logger.log_operation("close", "application")
+            event.accept()
+        else:
+            event.ignore()
 
     def dragEnterEvent(self, event: QDragEnterEvent):
         """Sürükleme olayını işler"""

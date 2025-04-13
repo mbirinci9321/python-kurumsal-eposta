@@ -1,11 +1,8 @@
-from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QLineEdit, QComboBox, QTableWidget,
-    QTableWidgetItem, QHeaderView, QMessageBox,
-    QDialogButtonBox, QFormLayout
-)
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction
+from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
+                             QTableWidget, QTableWidgetItem, QHeaderView,
+                             QLabel, QLineEdit, QMessageBox, QFrame)
+from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtGui import QFont, QIcon
 from utils.auth_manager import AuthManager
 from utils.logger import Logger
 from .icons import IconManager
@@ -20,234 +17,356 @@ class UserManagementDialog(QDialog):
         self.icon_manager = IconManager()
         
         self.setWindowTitle("Kullanıcı Yönetimi")
-        self.setMinimumSize(600, 400)
+        self.setMinimumSize(800, 600)
         
         self.init_ui()
         self.load_users()
     
     def init_ui(self):
-        """Arayüzü oluşturur."""
+        """Kullanıcı yönetimi arayüzünü oluşturur."""
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #f5f5f5;
+            }
+            QLabel {
+                color: #424242;
+                font-size: 13px;
+            }
+            QPushButton {
+                background-color: #2196F3;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                min-width: 100px;
+            }
+            QPushButton:hover {
+                background-color: #1976D2;
+            }
+            QPushButton:disabled {
+                background-color: #BDBDBD;
+            }
+            QPushButton#deleteButton {
+                background-color: #FF5252;
+            }
+            QPushButton#deleteButton:hover {
+                background-color: #D32F2F;
+            }
+            QLineEdit {
+                padding: 8px;
+                border: 1px solid #E0E0E0;
+                border-radius: 4px;
+                background-color: white;
+            }
+            QLineEdit:focus {
+                border: 2px solid #2196F3;
+            }
+            QTableWidget {
+                background-color: white;
+                border: 1px solid #E0E0E0;
+                border-radius: 4px;
+                gridline-color: #F5F5F5;
+            }
+            QTableWidget::item {
+                padding: 8px;
+            }
+            QTableWidget::item:selected {
+                background-color: #E3F2FD;
+                color: #1976D2;
+            }
+            QHeaderView::section {
+                background-color: #FAFAFA;
+                color: #424242;
+                padding: 8px;
+                border: none;
+                border-bottom: 1px solid #E0E0E0;
+            }
+            QFrame#searchFrame {
+                background-color: white;
+                border: 1px solid #E0E0E0;
+                border-radius: 4px;
+                padding: 10px;
+            }
+        """)
+
+        # Ana düzen
         layout = QVBoxLayout()
+        layout.setSpacing(20)
+        layout.setContentsMargins(20, 20, 20, 20)
+
+        # Başlık
+        title_label = QLabel('Kullanıcı Yönetimi')
+        title_label.setFont(QFont('Arial', 16, QFont.Bold))
+        title_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title_label)
+
+        # Arama çerçevesi
+        search_frame = QFrame()
+        search_frame.setObjectName("searchFrame")
+        search_layout = QHBoxLayout(search_frame)
         
-        # Araç çubuğu
-        toolbar = QHBoxLayout()
+        search_label = QLabel('Kullanıcı Ara:')
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText('Ad, soyad veya e-posta ile arama yapın...')
+        self.search_input.textChanged.connect(self.filter_users)
         
-        add_button = QPushButton("Yeni Kullanıcı")
-        add_button.clicked.connect(self.show_add_user_dialog)
-        self.icon_manager.set_icon(add_button, "add")
-        toolbar.addWidget(add_button)
-        
-        edit_button = QPushButton("Düzenle")
-        edit_button.clicked.connect(self.show_edit_user_dialog)
-        self.icon_manager.set_icon(edit_button, "edit")
-        toolbar.addWidget(edit_button)
-        
-        delete_button = QPushButton("Sil")
-        delete_button.clicked.connect(self.delete_user)
-        self.icon_manager.set_icon(delete_button, "delete")
-        toolbar.addWidget(delete_button)
-        
-        toolbar.addStretch()
-        
-        # Arama
-        search_label = QLabel("Ara:")
-        toolbar.addWidget(search_label)
-        
-        self.search_edit = QLineEdit()
-        self.search_edit.setPlaceholderText("Kullanıcı ara...")
-        self.search_edit.textChanged.connect(self.filter_users)
-        toolbar.addWidget(self.search_edit)
-        
-        layout.addLayout(toolbar)
-        
+        search_layout.addWidget(search_label)
+        search_layout.addWidget(self.search_input)
+        layout.addWidget(search_frame)
+
         # Kullanıcı tablosu
         self.user_table = QTableWidget()
-        self.user_table.setColumnCount(5)
-        self.user_table.setHorizontalHeaderLabels([
-            "ID", "Kullanıcı Adı", "Rol", "Durum", "Son Güncelleme"
-        ])
+        self.user_table.setColumnCount(4)
+        self.user_table.setHorizontalHeaderLabels(['Ad', 'Soyad', 'E-posta', 'Grup'])
+        
         header = self.user_table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)  # ID column
-        for i in range(1, 5):
-            header.setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(0, QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.Stretch)
+        header.setSectionResizeMode(3, QHeaderView.Stretch)
+        
         layout.addWidget(self.user_table)
-        
-        # Butonlar
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Close
-        )
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
-        
+
+        # Buton çerçevesi
+        button_frame = QFrame()
+        button_frame.setStyleSheet("""
+            QFrame {
+                background-color: white;
+                border: 1px solid #E0E0E0;
+                border-radius: 4px;
+                padding: 10px;
+            }
+        """)
+        button_layout = QHBoxLayout(button_frame)
+        button_layout.setSpacing(10)
+
+        # Kullanıcı işlem butonları
+        self.add_button = QPushButton('Kullanıcı Ekle')
+        self.add_button.setIcon(self.icon_manager.get_icon('add_user'))
+        self.add_button.clicked.connect(self.show_add_user_dialog)
+
+        self.edit_button = QPushButton('Düzenle')
+        self.edit_button.setIcon(self.icon_manager.get_icon('edit'))
+        self.edit_button.clicked.connect(self.show_edit_user_dialog)
+
+        self.delete_button = QPushButton('Sil')
+        self.delete_button.setObjectName("deleteButton")
+        self.delete_button.setIcon(self.icon_manager.get_icon('delete'))
+        self.delete_button.clicked.connect(self.delete_user)
+
+        button_layout.addWidget(self.add_button)
+        button_layout.addWidget(self.edit_button)
+        button_layout.addWidget(self.delete_button)
+        button_layout.addStretch()
+
+        close_button = QPushButton('Kapat')
+        close_button.setIcon(self.icon_manager.get_icon('cancel'))
+        close_button.clicked.connect(self.close)
+        button_layout.addWidget(close_button)
+
+        layout.addWidget(button_frame)
         self.setLayout(layout)
     
     def load_users(self):
-        """Kullanıcıları yükler."""
-        users = self.auth_manager.get_all_users()
-        self.user_table.setRowCount(len(users))
+        """Kullanıcı listesini yükler."""
+        self.user_table.setRowCount(0)
+        users = self.auth_manager.get_users()
         
-        for i, user in enumerate(users):
-            self.user_table.setItem(i, 0, QTableWidgetItem(str(user["id"])))
-            self.user_table.setItem(i, 1, QTableWidgetItem(user["username"]))
-            self.user_table.setItem(i, 2, QTableWidgetItem(user["role"]))
-            self.user_table.setItem(i, 3, QTableWidgetItem("Aktif" if user["is_active"] else "Pasif"))
-            self.user_table.setItem(i, 4, QTableWidgetItem(user["updated_at"]))
+        for user in users:
+            row = self.user_table.rowCount()
+            self.user_table.insertRow(row)
+            
+            self.user_table.setItem(row, 0, QTableWidgetItem(user.get('first_name', '')))
+            self.user_table.setItem(row, 1, QTableWidgetItem(user.get('last_name', '')))
+            self.user_table.setItem(row, 2, QTableWidgetItem(user.get('email', '')))
+            self.user_table.setItem(row, 3, QTableWidgetItem(user.get('group', '')))
     
     def filter_users(self):
-        """Kullanıcıları filtreler."""
-        search_text = self.search_edit.text().lower()
+        """Kullanıcıları arama metnine göre filtreler."""
+        search_text = self.search_input.text().lower()
         
-        for i in range(self.user_table.rowCount()):
-            row_hidden = True
-            for j in range(self.user_table.columnCount()):
-                item = self.user_table.item(i, j)
+        for row in range(self.user_table.rowCount()):
+            show_row = False
+            for col in range(self.user_table.columnCount()):
+                item = self.user_table.item(row, col)
                 if item and search_text in item.text().lower():
-                    row_hidden = False
+                    show_row = True
                     break
-            self.user_table.setRowHidden(i, row_hidden)
+            
+            self.user_table.setRowHidden(row, not show_row)
     
     def show_add_user_dialog(self):
         """Yeni kullanıcı ekleme dialogunu gösterir."""
-        dialog = UserDialog(self.auth_manager, self.logger, parent=self)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
+        dialog = UserDialog(self.auth_manager, parent=self)
+        if dialog.exec_() == QDialog.Accepted:
             self.load_users()
     
     def show_edit_user_dialog(self):
         """Kullanıcı düzenleme dialogunu gösterir."""
-        current_row = self.user_table.currentRow()
-        if current_row < 0:
-            QMessageBox.warning(self, "Uyarı", "Lütfen düzenlenecek kullanıcıyı seçin!")
+        selected = self.user_table.selectedItems()
+        if not selected:
+            QMessageBox.warning(self, "Uyarı", "Lütfen düzenlenecek kullanıcıyı seçin.")
             return
-            
-        user_id = int(self.user_table.item(current_row, 0).text())
-        user = self.auth_manager.get_user(user_id)
+
+        row = selected[0].row()
+        email = self.user_table.item(row, 2).text()
+        user = self.auth_manager.get_user(email)
         
         if user:
-            dialog = UserDialog(self.auth_manager, self.logger, user, parent=self)
-            if dialog.exec() == QDialog.DialogCode.Accepted:
+            dialog = UserDialog(self.auth_manager, user=user, parent=self)
+            if dialog.exec_() == QDialog.Accepted:
                 self.load_users()
     
     def delete_user(self):
         """Seçili kullanıcıyı siler."""
-        current_row = self.user_table.currentRow()
-        if current_row < 0:
-            QMessageBox.warning(self, "Uyarı", "Lütfen silinecek kullanıcıyı seçin!")
+        selected = self.user_table.selectedItems()
+        if not selected:
+            QMessageBox.warning(self, "Uyarı", "Lütfen silinecek kullanıcıyı seçin.")
             return
-            
-        user_id = int(self.user_table.item(current_row, 0).text())
+
+        row = selected[0].row()
+        email = self.user_table.item(row, 2).text()
         
         reply = QMessageBox.question(
             self,
-            "Kullanıcı Sil",
-            "Bu kullanıcıyı silmek istediğinizden emin misiniz?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
+            "Onay",
+            f"{email} kullanıcısını silmek istediğinizden emin misiniz?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
         )
         
-        if reply == QMessageBox.StandardButton.Yes:
-            if self.auth_manager.delete_user(user_id):
-                self.logger.log_security("Kullanıcı silindi", user_id)
+        if reply == QMessageBox.Yes:
+            if self.auth_manager.delete_user(email):
                 self.load_users()
+                QMessageBox.information(self, "Başarılı", "Kullanıcı başarıyla silindi.")
             else:
-                QMessageBox.critical(self, "Hata", "Kullanıcı silinirken bir hata oluştu!")
+                QMessageBox.critical(self, "Hata", "Kullanıcı silinirken bir hata oluştu.")
 
 class UserDialog(QDialog):
     """Kullanıcı ekleme/düzenleme dialogu."""
     
-    def __init__(self, auth_manager: AuthManager, logger: Logger, user=None, parent=None):
+    def __init__(self, auth_manager: AuthManager, user=None, parent=None):
         super().__init__(parent)
         self.auth_manager = auth_manager
-        self.logger = logger
         self.user = user
         
-        self.setWindowTitle("Kullanıcı Ekle" if not user else "Kullanıcı Düzenle")
+        self.setWindowTitle('Kullanıcı Ekle' if not self.user else 'Kullanıcı Düzenle')
         self.setMinimumWidth(400)
         
         self.init_ui()
     
     def init_ui(self):
-        """Dialog arayüzünü oluşturur."""
+        """Kullanıcı ekleme/düzenleme dialogunu oluşturur."""
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #f5f5f5;
+            }
+            QLabel {
+                color: #424242;
+                font-size: 13px;
+            }
+            QLineEdit {
+                padding: 8px;
+                border: 1px solid #E0E0E0;
+                border-radius: 4px;
+                background-color: white;
+            }
+            QLineEdit:focus {
+                border: 2px solid #2196F3;
+            }
+            QPushButton {
+                background-color: #2196F3;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                min-width: 100px;
+            }
+            QPushButton:hover {
+                background-color: #1976D2;
+            }
+            QPushButton[text="İptal"] {
+                background-color: #757575;
+            }
+            QPushButton[text="İptal"]:hover {
+                background-color: #616161;
+            }
+        """)
+
         layout = QVBoxLayout()
-        
-        # Form alanları
-        form_layout = QFormLayout()
-        
-        self.username_edit = QLineEdit()
-        if self.user:
-            self.username_edit.setText(self.user["username"])
-            self.username_edit.setEnabled(False)
-        form_layout.addRow("Kullanıcı Adı:", self.username_edit)
-        
+        layout.setSpacing(15)
+        layout.setContentsMargins(20, 20, 20, 20)
+
+        # Form düzeni
+        form_frame = QFrame()
+        form_frame.setStyleSheet("""
+            QFrame {
+                background-color: white;
+                border: 1px solid #E0E0E0;
+                border-radius: 4px;
+                padding: 15px;
+            }
+        """)
+        form_layout = QVBoxLayout(form_frame)
+        form_layout.setSpacing(10)
+
+        # Kullanıcı bilgileri
+        self.first_name_input = QLineEdit(self.user['first_name'] if self.user else '')
+        self.first_name_input.setPlaceholderText('Ad')
+        form_layout.addWidget(QLabel('Ad:'))
+        form_layout.addWidget(self.first_name_input)
+
+        self.last_name_input = QLineEdit(self.user['last_name'] if self.user else '')
+        self.last_name_input.setPlaceholderText('Soyad')
+        form_layout.addWidget(QLabel('Soyad:'))
+        form_layout.addWidget(self.last_name_input)
+
+        self.email_input = QLineEdit(self.user['email'] if self.user else '')
+        self.email_input.setPlaceholderText('E-posta')
+        form_layout.addWidget(QLabel('E-posta:'))
+        form_layout.addWidget(self.email_input)
+
+        self.group_input = QLineEdit(self.user['group'] if self.user else '')
+        self.group_input.setPlaceholderText('Grup')
+        form_layout.addWidget(QLabel('Grup:'))
+        form_layout.addWidget(self.group_input)
+
         if not self.user:
-            self.password_edit = QLineEdit()
-            self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
-            form_layout.addRow("Şifre:", self.password_edit)
-            
-            self.confirm_password_edit = QLineEdit()
-            self.confirm_password_edit.setEchoMode(QLineEdit.EchoMode.Password)
-            form_layout.addRow("Şifre Tekrar:", self.confirm_password_edit)
-        
-        self.role_combo = QComboBox()
-        self.role_combo.addItems(["user", "manager", "admin"])
-        if self.user:
-            self.role_combo.setCurrentText(self.user["role"])
-        form_layout.addRow("Rol:", self.role_combo)
-        
-        self.is_active_combo = QComboBox()
-        self.is_active_combo.addItems(["Aktif", "Pasif"])
-        if self.user:
-            self.is_active_combo.setCurrentText("Aktif" if self.user["is_active"] else "Pasif")
-        form_layout.addRow("Durum:", self.is_active_combo)
-        
-        layout.addLayout(form_layout)
-        
+            self.password_input = QLineEdit()
+            self.password_input.setPlaceholderText('Şifre')
+            self.password_input.setEchoMode(QLineEdit.Password)
+            form_layout.addWidget(QLabel('Şifre:'))
+            form_layout.addWidget(self.password_input)
+
+        layout.addWidget(form_frame)
+
         # Butonlar
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
-        )
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(10)
+
+        save_button = QPushButton('Kaydet')
+        save_button.clicked.connect(self.accept)
         
+        cancel_button = QPushButton('İptal')
+        cancel_button.clicked.connect(self.reject)
+
+        button_layout.addStretch()
+        button_layout.addWidget(save_button)
+        button_layout.addWidget(cancel_button)
+
+        layout.addLayout(button_layout)
         self.setLayout(layout)
     
-    def accept(self):
-        """Dialog kabul edildiğinde çalışır."""
-        username = self.username_edit.text()
-        role = self.role_combo.currentText()
-        is_active = self.is_active_combo.currentText() == "Aktif"
+    def get_user_data(self):
+        """Dialog'dan kullanıcı verilerini alır."""
+        data = {
+            'first_name': self.first_name_input.text(),
+            'last_name': self.last_name_input.text(),
+            'email': self.email_input.text(),
+            'group': self.group_input.text()
+        }
         
-        if not username:
-            QMessageBox.warning(self, "Uyarı", "Kullanıcı adı boş olamaz!")
-            return
-            
         if not self.user:
-            # Yeni kullanıcı
-            password = self.password_edit.text()
-            confirm_password = self.confirm_password_edit.text()
+            data['password'] = self.password_input.text()
             
-            if not password:
-                QMessageBox.warning(self, "Uyarı", "Şifre boş olamaz!")
-                return
-                
-            if password != confirm_password:
-                QMessageBox.warning(self, "Uyarı", "Şifreler eşleşmiyor!")
-                return
-                
-            if self.auth_manager.register(username, password, role):
-                self.logger.log_security("Yeni kullanıcı oluşturuldu", username)
-                super().accept()
-            else:
-                QMessageBox.critical(self, "Hata", "Kullanıcı oluşturulurken bir hata oluştu!")
-        else:
-            # Kullanıcı güncelleme
-            user_data = {
-                "role": role,
-                "is_active": is_active
-            }
-            
-            if self.auth_manager.update_user(self.user["id"], user_data):
-                self.logger.log_security("Kullanıcı güncellendi", self.user["id"])
-                super().accept()
-            else:
-                QMessageBox.critical(self, "Hata", "Kullanıcı güncellenirken bir hata oluştu!") 
+        return data 
