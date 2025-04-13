@@ -36,6 +36,8 @@
 - [x] Active Directory OU yapısı desteği
 - [x] Outlook imza entegrasyonu
 - [x] OU bazlı imza dağıtımı
+- [x] E-posta sunucusu entegrasyonu
+- [x] Outlook eklenti desteği
 
 ## Devam Eden Görevler 🚧
 

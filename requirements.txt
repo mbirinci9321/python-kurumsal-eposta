@@ -41,8 +41,12 @@ flake8==6.1.0
 isort==5.12.0
 
 # Outlook Integration
-pywin32==310
+pywin32==306
 
 # Active Directory Integration
 ldap3==2.9.1
-pyasn1==0.5.0 
+pyasn1==0.5.0
+
+# E-posta ve Outlook Entegrasyonu
+imaplib2==3.6
+exchangelib==4.8.0 
